@@ -1,0 +1,17 @@
+<resources>
+    <string name="nesa_channel_reminders_name">Activity reminders</string>
+    <string name="nesa_channel_reminders_description">Nudges when a planned activity is due.</string>
+    <string name="nesa_channel_alarm_name">Wake alarm</string>
+    <string name="nesa_channel_alarm_description">Your smart alarm. Keep this enabled so NESA can wake you.</string>
+    <string name="nesa_channel_review_name">Daily review</string>
+    <string name="nesa_channel_review_description">The evening and night summary of your day.</string>
+    <string name="nesa_channel_service_name">Background work</string>
+    <string name="nesa_channel_service_description">Quiet notice shown while an alarm is ringing.</string>
+
+    <string name="nesa_action_complete">Done</string>
+    <string name="nesa_action_later">Do later</string>
+    <string name="nesa_action_skip">Skip today</string>
+
+    <string name="nesa_reminder_window">%1$s to %2$s</string>
+    <string name="nesa_alarm_ringing">Tap to wake up</string>
+</resources>

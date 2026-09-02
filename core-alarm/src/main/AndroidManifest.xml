@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Alarm permissions, in order of how Android has tightened them:
+
+      USE_EXACT_ALARM is for applications whose core purpose is an alarm clock.
+      NESA qualifies: waking the user is a primary feature, not a convenience.
+
+      SCHEDULE_EXACT_ALARM covers Android 12 and 12L, where the same capability
+      was a user-grantable permission instead. ExactAlarmCapability checks at
+      runtime and NESA falls back to inexact alarms if either is unavailable.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Lets the alarm take over a locked screen, as an alarm clock must. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <application>
+
+        <!--
+          Android 14 requires every foreground service to declare a type. None of
+          the standard types describes an alarm clock, so this uses specialUse
+          with an explicit justification, which is what the platform asks for.
+        -->
+        <service
+            android:name=".AlarmRingerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Ringing a user-configured alarm clock until it is answered" />
+        </service>
+
+        <receiver
+            android:name=".AlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
+
+        <!--
+          Must be exported so the system can deliver boot and clock changes.
+          It reacts only to the four actions below and reads nothing from the
+          intent beyond its action.
+        -->
+        <receiver
+            android:name=".BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
