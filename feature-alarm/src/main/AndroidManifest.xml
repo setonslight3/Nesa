@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+          Its own task so dismissing the alarm never drops the user into the
+          middle of whatever they were doing before they went to sleep.
+          showOnLockScreen and turnScreenOn are what make it an alarm rather
+          than a notification.
+        -->
+        <activity
+            android:name=".AlarmRingActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:turnScreenOn="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=".alarm"
+            android:theme="@style/Theme.Nesa.Alarm" />
+    </application>
+</manifest>

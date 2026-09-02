@@ -1,0 +1,4 @@
+<resources>
+    <!-- Keeps the launch frame from flashing white on a dark device. -->
+    <color name="nesa_window_background">#191C1A</color>
+</resources>

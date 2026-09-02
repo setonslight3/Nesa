@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NESA's data is local by design. The plan, alarms and history are backed up so
+  a new device is not a fresh start, and nothing is excluded because nothing
+  here is a credential.
+-->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    <include domain="file" path="datastore" />
+</full-backup-content>

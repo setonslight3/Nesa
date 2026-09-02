@@ -7,6 +7,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.nesa.core.model.PlannedActivity
+import com.nesa.core.scheduling.ActivityEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -135,10 +136,10 @@ class NesaNotifier @Inject constructor(
 }
 
 /** The decisions a user can take straight from a notification. */
-enum class ActivityAction(val intentAction: String) {
-    COMPLETE("com.nesa.action.COMPLETE"),
-    LATER("com.nesa.action.LATER"),
-    SKIP("com.nesa.action.SKIP");
+enum class ActivityAction(val intentAction: String, val event: ActivityEvent) {
+    COMPLETE("com.nesa.action.COMPLETE", ActivityEvent.COMPLETE),
+    LATER("com.nesa.action.LATER", ActivityEvent.DEFER),
+    SKIP("com.nesa.action.SKIP", ActivityEvent.SKIP);
 
     companion object {
         fun fromIntentAction(action: String?): ActivityAction? =

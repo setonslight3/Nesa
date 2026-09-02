@@ -35,10 +35,9 @@ kotlin {
 }
 
 dependencies {
+    // Only the domain: onboarding writes through repository interfaces and
+    // declares its own port for the alarm it offers to create.
     implementation(project(":core-model"))
-    implementation(project(":core-storage"))
-    implementation(project(":core-settings"))
-
     implementation(project(":core-ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

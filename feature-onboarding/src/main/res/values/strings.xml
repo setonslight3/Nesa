@@ -1,0 +1,31 @@
+<resources>
+    <string name="onboarding_welcome_title">Welcome to NESA</string>
+    <string name="onboarding_welcome_body">NESA plans a practical day with you, and adjusts when life gets in the way. Two questions and you are in — everything else is optional, forever.</string>
+    <string name="onboarding_name_label">What should NESA call you? (optional)</string>
+
+    <string name="onboarding_goals_title">What are you working on?</string>
+    <string name="onboarding_goals_body">Pick as many or as few as you like. This only shapes suggestions — you can change it any time.</string>
+
+    <string name="onboarding_rhythm_title">When does your day run?</string>
+    <string name="onboarding_rhythm_body">NESA protects your sleep and uses the evening to recover anything that slipped.</string>
+    <string name="onboarding_wake_label">Wake up</string>
+    <string name="onboarding_sleep_label">Sleep target</string>
+    <string name="onboarding_create_alarm">Set a daily wake alarm for this time</string>
+    <string name="onboarding_create_alarm_support">You can change or turn it off at any time.</string>
+
+    <string name="onboarding_next">Continue</string>
+    <string name="onboarding_start">Start using NESA</string>
+    <string name="onboarding_skip">Skip for now</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_confirm">Set</string>
+    <string name="onboarding_cancel">Cancel</string>
+
+    <string name="goal_productivity">Productivity</string>
+    <string name="goal_fitness">Fitness</string>
+    <string name="goal_learning">Learning</string>
+    <string name="goal_sleep">Sleep</string>
+    <string name="goal_time_management">Time management</string>
+    <string name="goal_consistency">Consistency</string>
+    <string name="goal_personal_projects">Personal projects</string>
+    <string name="goal_custom">Something else</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <!-- Activity states -->
+    <string name="nesa_state_upcoming">Upcoming</string>
+    <string name="nesa_state_active">Now</string>
+    <string name="nesa_state_completed">Done</string>
+    <string name="nesa_state_later">Later</string>
+    <string name="nesa_state_skipped">Skipped</string>
+    <string name="nesa_state_missed">Missed</string>
+    <string name="nesa_state_cancelled">Cancelled</string>
+
+    <!-- Day cycles -->
+    <string name="nesa_cycle_morning">Morning</string>
+    <string name="nesa_cycle_day">Day</string>
+    <string name="nesa_cycle_evening">Evening</string>
+    <string name="nesa_cycle_night">Night</string>
+
+    <!-- Priority -->
+    <string name="nesa_priority_critical">Critical</string>
+    <string name="nesa_priority_high">High</string>
+    <string name="nesa_priority_normal">Normal</string>
+    <string name="nesa_priority_low">Low</string>
+
+    <!-- Flexibility -->
+    <string name="nesa_flexibility_fixed">Fixed</string>
+    <string name="nesa_flexibility_time">Time-flexible</string>
+    <string name="nesa_flexibility_day">Day-flexible</string>
+    <string name="nesa_flexibility_optional">Optional</string>
+    <string name="nesa_flexibility_deadline">Deadline</string>
+
+    <!-- Guidance -->
+    <string name="nesa_guidance_gentle">Gentle</string>
+    <string name="nesa_guidance_balanced">Balanced</string>
+    <string name="nesa_guidance_persistent">Persistent</string>
+    <string name="nesa_guidance_strict">Strict</string>
+
+    <!-- Shared -->
+    <string name="nesa_anchor">Fixed commitment</string>
+    <string name="nesa_duration_hours_minutes">%1$dh %2$dm</string>
+    <string name="nesa_duration_hours">%1$dh</string>
+    <string name="nesa_duration_minutes">%1$dm</string>
+    <string name="nesa_time_range">%1$s – %2$s</string>
+    <string name="nesa_back">Back</string>
+</resources>

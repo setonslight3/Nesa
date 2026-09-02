@@ -174,8 +174,14 @@ object AdaptiveScheduler {
                 item.block.copy(
                     start = placement.start,
                     end = placement.end,
-                    changeReason = placement.changeReason.takeIf { placement.moved }
-                        ?: item.block.changeReason
+                    // A move gets a fresh explanation. An activity that stayed
+                    // put keeps the one it had — unless that explanation was
+                    // "there was no room", which placing it has just disproved.
+                    changeReason = if (placement.moved) {
+                        placement.changeReason
+                    } else {
+                        item.block.changeReason?.takeUnless { it.isUnplacedReason() }
+                    }
                 )
             } else {
                 val unplacedItem = result.unplaced.firstOrNull { it.blockId == item.block.id }
@@ -309,6 +315,10 @@ object AdaptiveScheduler {
             else -> Feasibility.FULLY_FEASIBLE
         }
     }
+
+    /** True for the reasons NESA records when it could not place something. */
+    private fun ChangeReason.isUnplacedReason(): Boolean =
+        this is ChangeReason.NoRoomToday || this is ChangeReason.DeferredToAnotherDay
 
     private fun PlannedActivity.toUnchangedPlacement(window: DayWindow): Placement = Placement(
         blockId = block.id,

@@ -1,0 +1,67 @@
+<resources>
+    <string name="alarm_title">Wake alarm</string>
+    <string name="alarm_enabled">Alarm on</string>
+    <string name="alarm_time">Ring at</string>
+    <string name="alarm_repeat">Repeat on</string>
+    <string name="alarm_repeat_none">Once, at the next occurrence</string>
+    <string name="alarm_vibrate">Vibrate</string>
+    <string name="alarm_fade_in">Fade the sound in</string>
+    <string name="alarm_fade_in_value">%1$d seconds</string>
+
+    <string name="alarm_challenge_title">Wake challenge</string>
+    <string name="alarm_challenge_required">Require a challenge to stop the alarm</string>
+    <string name="alarm_challenge_required_support">Confirms you are actually awake. It is never a maths test.</string>
+    <string name="alarm_challenge_adaptive">Adjust the difficulty over time</string>
+    <string name="alarm_challenge_adaptive_support">Gets slightly harder if you breeze through it, and easier if you struggle.</string>
+    <string name="alarm_challenge_type">Type</string>
+    <string name="alarm_challenge_difficulty">Difficulty</string>
+
+    <string name="alarm_snooze_title">Snooze</string>
+    <string name="alarm_snooze_minutes">Snooze length</string>
+    <string name="alarm_snooze_minutes_value">%1$d minutes</string>
+    <string name="alarm_snooze_max">Snoozes allowed</string>
+    <string name="alarm_snooze_max_value">%1$d</string>
+    <string name="alarm_retry_minutes">Retry if you do not respond</string>
+    <string name="alarm_retry_minutes_value">After %1$d minutes</string>
+    <string name="alarm_retry_max">Retries</string>
+
+    <string name="alarm_next_ring">Next alarm: %1$s</string>
+    <string name="alarm_not_scheduled">This alarm is off.</string>
+    <string name="alarm_inexact_warning">Android is not allowing NESA to set exact alarms on this device, so the alarm may ring a few minutes late. You can grant exact alarms in system settings.</string>
+    <string name="alarm_inexact_action">Open settings</string>
+
+    <string name="alarm_challenge_tap">Tap the circles in order</string>
+    <string name="alarm_challenge_pattern">Watch, then repeat the pattern</string>
+    <string name="alarm_challenge_pattern_watch">Watch…</string>
+    <string name="alarm_challenge_memory">Remember these</string>
+    <string name="alarm_challenge_memory_pick">Now pick them out</string>
+    <string name="alarm_challenge_reaction">Tap when it turns green</string>
+    <string name="alarm_challenge_reaction_wait">Wait…</string>
+    <string name="alarm_challenge_reaction_now">Now</string>
+    <string name="alarm_challenge_round">Round %1$d of %2$d</string>
+
+    <string name="alarm_ring_dismiss">I am awake</string>
+    <string name="alarm_ring_snooze">Snooze %1$d min</string>
+    <string name="alarm_ring_sleep_in">Sleep in today</string>
+    <string name="alarm_ring_snoozes_left">%1$d snoozes left</string>
+    <string name="alarm_ring_no_snoozes">No snoozes left</string>
+
+    <string name="alarm_type_tap">Tap sequence</string>
+    <string name="alarm_type_pattern">Pattern</string>
+    <string name="alarm_type_memory">Memory</string>
+    <string name="alarm_type_reaction">Reaction</string>
+    <string name="alarm_difficulty_easy">Easy</string>
+    <string name="alarm_difficulty_medium">Medium</string>
+    <string name="alarm_difficulty_hard">Hard</string>
+
+    <string name="alarm_day_mon">Mon</string>
+    <string name="alarm_day_tue">Tue</string>
+    <string name="alarm_day_wed">Wed</string>
+    <string name="alarm_day_thu">Thu</string>
+    <string name="alarm_day_fri">Fri</string>
+    <string name="alarm_day_sat">Sat</string>
+    <string name="alarm_day_sun">Sun</string>
+
+    <string name="alarm_confirm">Set</string>
+    <string name="alarm_cancel">Cancel</string>
+</resources>

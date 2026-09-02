@@ -30,12 +30,11 @@ kotlin {
 }
 
 dependencies {
-    // Notifications carry actions the user taps, and those actions have to
-    // change real state, so this layer reaches storage and the state machine
-    // directly rather than bouncing through the UI.
+    // Notification actions change real state, so this layer talks to the
+    // repository interfaces and the state machine directly rather than
+    // bouncing a tap through the UI. The implementations come from the app.
     api(project(":core-model"))
     implementation(project(":core-scheduling"))
-    implementation(project(":core-storage"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

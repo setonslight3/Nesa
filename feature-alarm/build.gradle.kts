@@ -37,12 +37,12 @@ kotlin {
 dependencies {
     implementation(project(":core-model"))
     implementation(project(":core-scheduling"))
-    implementation(project(":core-storage"))
-    implementation(project(":core-settings"))
+    // The alarm platform, for the ringing screen and the capability check.
     implementation(project(":core-alarm"))
-
     implementation(project(":core-ui"))
     implementation(libs.androidx.core.ktx)
+    // The alarm rings in its own Activity, so this module needs activity-compose.
+    implementation(libs.androidx.activity.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

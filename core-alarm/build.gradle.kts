@@ -30,13 +30,11 @@ kotlin {
 }
 
 dependencies {
-    // The platform layer for wake-critical scheduling. It depends on storage
-    // because alarms must be re-armed from persisted state after a reboot,
-    // long before any UI exists.
+    // The platform layer for wake-critical scheduling. It re-arms alarms from
+    // persisted state after a reboot, long before any UI exists, and reaches
+    // that state through the domain's repository interfaces.
     api(project(":core-model"))
     implementation(project(":core-scheduling"))
-    implementation(project(":core-storage"))
-    implementation(project(":core-settings"))
     implementation(project(":core-notifications"))
 
     implementation(libs.androidx.core.ktx)

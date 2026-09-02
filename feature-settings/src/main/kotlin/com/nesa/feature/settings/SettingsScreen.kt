@@ -1,0 +1,261 @@
+package com.nesa.feature.settings
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nesa.core.model.GuidancePersonality
+import com.nesa.core.model.ThemeMode
+import com.nesa.core.ui.component.NesaScaffold
+import com.nesa.core.ui.component.NesaTimePickerDialog
+import com.nesa.core.ui.component.NoticeCard
+import com.nesa.core.ui.component.NoticeEmphasis
+import com.nesa.core.ui.component.SectionHeader
+import com.nesa.core.ui.component.SwitchRow
+import com.nesa.core.ui.component.TimeField
+import com.nesa.core.ui.format.label
+import com.nesa.core.ui.theme.NesaSpacing
+import java.time.LocalTime
+
+/**
+ * Settings.
+ *
+ * Only what Stage 1 actually has: the shape of the day, how insistent NESA is,
+ * reminders, appearance, and a way into the alarm. Nothing is here to look
+ * complete — every row changes real behaviour.
+ */
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenAlarm: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var editingField by remember { mutableStateOf<DayWindowField?>(null) }
+    var name by remember(state.settings.displayName) {
+        mutableStateOf(state.settings.displayName.orEmpty())
+    }
+
+    LaunchedEffect(Unit) { viewModel.refreshNotificationPermission() }
+
+    NesaScaffold(
+        title = stringResource(R.string.settings_title),
+        modifier = modifier,
+        onBack = onBack
+    ) { padding ->
+        val window = state.settings.dayWindow
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = NesaSpacing.screen)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(NesaSpacing.sm)
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    viewModel.onDisplayNameChanged(it)
+                },
+                label = { Text(stringResource(R.string.settings_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            SectionHeader(title = stringResource(R.string.settings_day_title))
+            NoticeCard(text = stringResource(R.string.settings_day_help))
+
+            TimeField(
+                label = stringResource(R.string.settings_wake),
+                value = window.wakeTime,
+                onClick = { editingField = DayWindowField.WAKE }
+            )
+            TimeField(
+                label = stringResource(R.string.settings_sleep),
+                value = window.sleepTarget,
+                supportingText = if (window.sleepTargetIsAfterMidnight) {
+                    stringResource(R.string.settings_sleep_after_midnight)
+                } else {
+                    null
+                },
+                onClick = { editingField = DayWindowField.SLEEP }
+            )
+            TimeField(
+                label = stringResource(R.string.settings_morning_ends),
+                value = window.morningEnds,
+                onClick = { editingField = DayWindowField.MORNING_ENDS }
+            )
+            TimeField(
+                label = stringResource(R.string.settings_evening_starts),
+                value = window.eveningStarts,
+                onClick = { editingField = DayWindowField.EVENING_STARTS }
+            )
+            TimeField(
+                label = stringResource(R.string.settings_night_starts),
+                value = window.nightStarts,
+                onClick = { editingField = DayWindowField.NIGHT_STARTS }
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
+            SectionHeader(title = stringResource(R.string.settings_guidance_title))
+            NoticeCard(text = stringResource(R.string.settings_guidance_help))
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+                GuidancePersonality.entries.forEach { guidance ->
+                    FilterChip(
+                        selected = state.settings.guidance == guidance,
+                        onClick = { viewModel.onGuidanceChanged(guidance) },
+                        label = { Text(guidance.label()) }
+                    )
+                }
+            }
+            Text(
+                text = stringResource(
+                    R.string.settings_guidance_detail,
+                    state.settings.guidance.maxReminders,
+                    state.settings.guidance.missedGraceMinutes
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            SwitchRow(
+                title = stringResource(R.string.settings_reminders),
+                supportingText = stringResource(R.string.settings_reminders_support),
+                checked = state.settings.remindersEnabled,
+                onCheckedChange = viewModel::onRemindersEnabledChanged,
+                enabled = state.notificationsAllowed
+            )
+
+            if (!state.notificationsAllowed) {
+                NoticeCard(
+                    text = stringResource(R.string.settings_notifications_blocked),
+                    emphasis = NoticeEmphasis.WARNING,
+                    action = {
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    viewModel.notificationSettingsIntent(context.packageName)
+                                )
+                            }
+                        ) {
+                            Text(stringResource(R.string.settings_notifications_action))
+                        }
+                    }
+                )
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
+            SectionHeader(title = stringResource(R.string.settings_appearance_title))
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = state.settings.themeMode == mode,
+                        onClick = { viewModel.onThemeModeChanged(mode) },
+                        label = { Text(mode.themeLabel()) }
+                    )
+                }
+            }
+
+            HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
+
+            NavigationRow(
+                title = stringResource(R.string.settings_alarm),
+                onClick = onOpenAlarm
+            )
+
+            SectionHeader(title = stringResource(R.string.settings_about_title))
+            Text(
+                text = stringResource(R.string.settings_about_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(NesaSpacing.xl))
+        }
+    }
+
+    val field = editingField
+    if (field != null) {
+        val window = state.settings.dayWindow
+        NesaTimePickerDialog(
+            initial = when (field) {
+                DayWindowField.WAKE -> window.wakeTime
+                DayWindowField.SLEEP -> window.sleepTarget
+                DayWindowField.MORNING_ENDS -> window.morningEnds
+                DayWindowField.EVENING_STARTS -> window.eveningStarts
+                DayWindowField.NIGHT_STARTS -> window.nightStarts
+            },
+            confirmLabel = stringResource(R.string.settings_confirm),
+            cancelLabel = stringResource(R.string.settings_cancel),
+            onConfirm = { time: LocalTime ->
+                viewModel.onDayWindowFieldChanged(field, time)
+                editingField = null
+            },
+            onDismiss = { editingField = null }
+        )
+    }
+}
+
+@Composable
+private fun NavigationRow(title: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = NesaSpacing.touchTarget)
+            .clickable(onClick = onClick)
+            .padding(vertical = NesaSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+        Icon(Icons.Default.ChevronRight, contentDescription = null)
+    }
+}
+
+@Composable
+private fun ThemeMode.themeLabel(): String = stringResource(
+    when (this) {
+        ThemeMode.SYSTEM -> R.string.settings_theme_system
+        ThemeMode.LIGHT -> R.string.settings_theme_light
+        ThemeMode.DARK -> R.string.settings_theme_dark
+    }
+)

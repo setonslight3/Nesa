@@ -1,0 +1,12 @@
+<resources>
+    <!--
+      The platform theme only covers the window before Compose draws. The real
+      NESA theme lives in core-ui; this exists so the launch frame is the right
+      colour rather than the system default.
+    -->
+    <style name="Theme.Nesa" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nesa_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

@@ -1,0 +1,13 @@
+<!-- A clock face: NESA's day, with the hands at a start rather than an end. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26c-15.46,0 -28,12.54 -28,28s12.54,28 28,28 28,-12.54 28,-28 -12.54,-28 -28,-28zM54,76c-12.15,0 -22,-9.85 -22,-22s9.85,-22 22,-22 22,9.85 22,22 -9.85,22 -22,22z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M56,40h-4v15.2l12.6,7.56 2,-3.28 -10.6,-6.28z" />
+</vector>

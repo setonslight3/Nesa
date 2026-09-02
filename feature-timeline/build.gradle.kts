@@ -35,12 +35,10 @@ kotlin {
 }
 
 dependencies {
+    // The domain plus the scheduling use cases. No Room, no platform services:
+    // the application module supplies the implementations behind the interfaces.
     implementation(project(":core-model"))
     implementation(project(":core-scheduling"))
-    implementation(project(":core-storage"))
-    implementation(project(":core-settings"))
-    implementation(project(":core-notifications"))
-
     implementation(project(":core-ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

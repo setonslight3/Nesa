@@ -345,6 +345,39 @@ class AdaptiveSchedulerTest {
     }
 
     @Test
+    fun `once there is room again, the no-room explanation is cleared`() {
+        // Yesterday's crowded day left this marked as unplaceable. Today it
+        // fits, so the stale explanation must not survive and keep it hidden
+        // away in the "needs a slot" group.
+        val stale = planned("chores", at(14, 0), 60).let {
+            it.copy(
+                block = it.block.copy(
+                    state = ActivityState.LATER,
+                    changeReason = ChangeReason.NoRoomToday
+                )
+            )
+        }
+        val items = listOf(stale)
+        val result = AdaptiveScheduler.schedule(ScheduleRequest(TestDate, items, TestWindow))
+
+        val updated = AdaptiveScheduler.applyTo(items, result).single()
+        assertEquals(at(14, 0), updated.start)
+        assertNull("the activity was placed, so it no longer needs a slot", updated.changeReason)
+    }
+
+    @Test
+    fun `an explanation for a real move survives until the next move`() {
+        val moved = planned("gym", at(11, 0), 60).let {
+            it.copy(block = it.block.copy(changeReason = ChangeReason.MovedForAnchor("lecture")))
+        }
+        val items = listOf(moved)
+        val result = AdaptiveScheduler.schedule(ScheduleRequest(TestDate, items, TestWindow))
+
+        val updated = AdaptiveScheduler.applyTo(items, result).single()
+        assertEquals(ChangeReason.MovedForAnchor("lecture"), updated.changeReason)
+    }
+
+    @Test
     fun `a sleep target after midnight still closes the day at the date boundary`() {
         val nightOwl = TestWindow.copy(
             wakeTime = LocalTime.of(9, 0),

@@ -1,0 +1,11 @@
+<resources>
+    <!--
+      A bare, no-action-bar theme. The alarm screen paints its own background
+      through Compose; the window keeps a solid colour so nothing shows through
+      from whatever was on screen before the device went to sleep.
+    -->
+    <style name="Theme.Nesa.Alarm" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+        <item name="android:windowShowWallpaper">false</item>
+    </style>
+</resources>

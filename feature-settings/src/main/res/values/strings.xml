@@ -1,0 +1,34 @@
+<resources>
+    <string name="settings_title">Settings</string>
+
+    <string name="settings_day_title">Your day</string>
+    <string name="settings_wake">Wake up</string>
+    <string name="settings_sleep">Sleep target</string>
+    <string name="settings_morning_ends">Morning ends</string>
+    <string name="settings_evening_starts">Evening starts</string>
+    <string name="settings_night_starts">Night starts</string>
+    <string name="settings_day_help">NESA protects your sleep target, uses the evening to recover anything that slipped, and keeps the night for winding down.</string>
+    <string name="settings_sleep_after_midnight">Your sleep target is after midnight, so NESA plans today up to 23:59 and starts tomorrow fresh.</string>
+
+    <string name="settings_guidance_title">How persistent should NESA be?</string>
+    <string name="settings_guidance_help">Persistence means a bounded number of meaningful reminders — never an endless stream.</string>
+    <string name="settings_guidance_detail">%1$d reminders, then treated as missed after %2$d minutes.</string>
+
+    <string name="settings_reminders">Activity reminders</string>
+    <string name="settings_reminders_support">Nudges when a planned activity is due.</string>
+    <string name="settings_notifications_blocked">Notifications are turned off for NESA, so reminders cannot be delivered.</string>
+    <string name="settings_notifications_action">Open notification settings</string>
+
+    <string name="settings_appearance_title">Appearance</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+
+    <string name="settings_name">Your name</string>
+    <string name="settings_alarm">Wake alarm</string>
+    <string name="settings_about_title">About</string>
+    <string name="settings_about_body">NESA Stage 1. Your plan, alarms and history live on this device. Nothing is sent anywhere.</string>
+
+    <string name="settings_confirm">Set</string>
+    <string name="settings_cancel">Cancel</string>
+</resources>
