@@ -172,6 +172,32 @@ failure is diagnosable from logcat rather than by inspection. **None of this is
 unit-testable** — it is service lifecycle behaviour — so it needs a device to
 confirm, which is the point of running the gate.
 
+## Gate run 2 — further alarm hardening
+
+Built and applied on the VPS after gate run 1, then reviewed here. Two findings
+were genuine improvements and are kept:
+
+- **Doze.** The inexact fallback used `setWindow`, which does **not** wake a
+  device from Doze — so on a phone idle overnight the alarm could have been
+  swallowed regardless of everything else. The fallback is now
+  `setExactAndAllowWhileIdle`, then `setAndAllowWhileIdle`, both of which wake
+  from Doze. This composes correctly with the receiver's notification fallback,
+  since `setAndAllowWhileIdle` is inexact and so does not grant the
+  foreground-service exemption.
+- **Audio.** The ringer now tries the alarm, ringtone, notification and system
+  default URIs in turn, rather than giving up if the first is unset, and starts
+  at a quarter volume instead of silence so the first seconds are audible.
+
+Two were corrected:
+
+- The alarm settings screen created the alarm **enabled**, which would arm an
+  alarm for a user who had declined one during onboarding. It creates a disabled
+  alarm again; setting a time still enables it, which is the case that mattered.
+- `AlarmRingActivity` called `requestDismissKeyguard`, which raises the PIN
+  prompt on a secure device. `setShowWhenLocked` already shows the alarm over the
+  lock screen, and putting authentication between a half-asleep person and their
+  alarm is the wrong trade.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take

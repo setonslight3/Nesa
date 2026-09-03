@@ -59,6 +59,11 @@ class AlarmSettingsViewModel @Inject constructor(
 
     fun onEnabledChanged(enabled: Boolean) = update { it.copy(enabled = enabled) }
 
+    /**
+     * Setting a time is unambiguous intent to use the alarm, so it also enables
+     * it. Without this, a user could carefully pick a wake time on a disabled
+     * alarm and hear nothing the next morning.
+     */
     fun onTimeChanged(time: LocalTime) = update { it.copy(time = time, enabled = true) }
 
     fun onDayToggled(day: DayOfWeek) = update { alarm ->
@@ -109,11 +114,16 @@ class AlarmSettingsViewModel @Inject constructor(
         val existing = preferences.primaryAlarmId?.let { alarms.find(it) }
             ?: alarms.alarms().firstOrNull()
 
+        // Created disabled on purpose. A user who declined the alarm during
+        // onboarding must not get an armed one simply for opening this screen —
+        // that would override a decision they already made. Setting a time
+        // enables it (see onTimeChanged), and the toggle is the first row on the
+        // screen, so switching it on is never hard to find.
         val alarm = existing ?: Alarm(
             id = UUID.randomUUID().toString(),
             time = preferences.dayWindow.wakeTime,
             days = DayOfWeek.entries.toSet(),
-            enabled = true
+            enabled = false
         ).also {
             // Persist immediately so the screen always edits a real row rather
             // than a draft that could be lost.

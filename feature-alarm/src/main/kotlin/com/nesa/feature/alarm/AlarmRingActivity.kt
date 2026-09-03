@@ -20,8 +20,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import android.app.KeyguardManager
-import androidx.core.content.getSystemService
 import javax.inject.Inject
 
 /**
@@ -94,10 +92,12 @@ class AlarmRingActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                 WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val keyguard = getSystemService<KeyguardManager>()
-            keyguard?.requestDismissKeyguard(this, null)
-        }
+        // Deliberately NOT calling KeyguardManager.requestDismissKeyguard here.
+        // setShowWhenLocked already puts this screen over the lock screen, where
+        // the user can answer the alarm without unlocking. requestDismissKeyguard
+        // instead raises the PIN or pattern prompt on a secure device, which puts
+        // an authentication step between a half-asleep person and silencing their
+        // alarm. Showing over the keyguard is what an alarm clock should do.
     }
 
     companion object {

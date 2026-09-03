@@ -16,6 +16,16 @@ acceptable; a half-built feature is not.
 `docs/verification.md` records exactly what has been verified and what has not.
 **Read it before claiming anything works.** Stage 1 has not yet passed its gate.
 
+## Two agents work on this repository
+
+Claude writes the code; Antigravity on the VPS compiles it and runs it on a
+device. **Read `docs/build-handoff.md` before changing anything** — it says who
+does what and why, and `docs/build-log.md` carries the latest build result.
+
+The rule that matters: put the *reasoning* for a non-obvious decision in a code
+comment, not only in a chat. Neither agent can see the other's conversation, and
+an unexplained decision gets "fixed" back.
+
 ## Commands
 
 ```bash
