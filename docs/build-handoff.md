@@ -38,7 +38,22 @@ environment issue — fix that and say so in the commit message.
 
 1. Write the fix, with the *reasoning* in a code comment, not just the change.
 2. Run the domain tests (`:core-model:test`, `:core-scheduling:test`).
-3. Push, and say what needs verifying on the device.
+3. **Run `python3 tools/check-imports.py`** — see below.
+4. Push, and say what needs verifying on the device.
+
+### The import check
+
+Claude cannot compile the Android modules, so a symbol used without its import
+survives all the way to Antigravity's build and costs a full round trip. That
+has happened: imports were stripped from `AlarmRingerService` while slimming it
+and nothing caught it until the build failed.
+
+`tools/check-imports.py` catches that specific class of mistake — a project type
+or a well-known coroutines function used without its import. It is not a
+compiler, it cannot type-check, and a clean run does not mean the build passes.
+It is worth the two seconds it takes before every push.
+
+Antigravity may run it too, but the real check on that side is the build.
 
 ## Why reasoning goes in comments
 

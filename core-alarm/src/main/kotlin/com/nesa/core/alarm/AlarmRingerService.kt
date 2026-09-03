@@ -7,19 +7,21 @@ import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import androidx.core.app.ServiceCompat
 import androidx.core.content.getSystemService
+import com.nesa.core.model.Alarm
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.core.app.ServiceCompat
+import java.time.ZonedDateTime
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.ZonedDateTime
-import javax.inject.Inject
 
 /**
  * Rings the alarm.

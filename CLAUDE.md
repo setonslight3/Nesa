@@ -35,6 +35,8 @@ an unexplained decision gets "fixed" back.
 ./gradlew :core-scheduling:test  # the domain tests — the ones that matter most
 ./gradlew connectedAndroidTest   # instrumented tests (needs a device/emulator)
 ./gradlew lint                   # Android lint
+
+python3 tools/check-imports.py   # missing-import check for anyone who cannot compile
 ```
 
 Run a single test class or method:

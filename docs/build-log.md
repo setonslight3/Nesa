@@ -7,6 +7,23 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## 2026-09-03 — e706b41 — FAILED, fixed in the commit that follows
+
+`:core-alarm:compileDebugKotlin` and `compileReleaseKotlin` both failed:
+
+```
+AlarmRingerService.kt:133:47 Unresolved reference 'Alarm'.
+AlarmRingerService.kt:136:13 Unresolved reference 'delay'.
+AlarmRingerService.kt:137:26 Unresolved reference 'id'.
+```
+
+Cause: moving the audio out of `AlarmRingerService` stripped
+`com.nesa.core.model.Alarm` and `kotlinx.coroutines.delay`, which the unanswered
+timeout still uses. The third error was a cascade of the first.
+
+Both imports restored. `tools/check-imports.py` added, and confirmed to
+reproduce exactly these two findings when the imports are removed again.
+
 ## 2026-09-03 — 02aa068 — FAILED
 
 `./gradlew assembleDebug` failed with Kotlin compilation errors in `AlarmRingerService.kt`:
