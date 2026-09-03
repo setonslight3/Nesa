@@ -359,6 +359,25 @@ private fun ReliabilitySection(
         onCheckedChange = viewModel::onKeepAliveChanged
     )
 
+    // The toggle records a wish; this records what the phone actually did with it.
+    if (state.settings.keepAliveEnabled) {
+        Text(
+            text = stringResource(
+                if (reliability.keepAliveRunning) {
+                    R.string.settings_reliability_keep_alive_active
+                } else {
+                    R.string.settings_reliability_keep_alive_dead
+                }
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (reliability.keepAliveRunning) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.error
+            }
+        )
+    }
+
     var testMessage by remember { mutableStateOf<String?>(null) }
     val armedTemplate = stringResource(R.string.settings_reliability_test_armed)
     val failedMessage = stringResource(R.string.settings_reliability_test_failed)

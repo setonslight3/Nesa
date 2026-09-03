@@ -61,7 +61,16 @@ class AlarmRingerService : Service() {
         // happens first, synchronously, on every path — including the ones that
         // only stop the alarm, which are still started as foreground services and
         // would otherwise crash. Nothing that touches the database comes before it.
+        if (intent?.action == ACTION_START) recordLateness(intent)
+
         if (!promoteToForeground(alarmId)) {
+            // The safety net the broadcast receiver used to provide: if the
+            // service cannot become foreground, a full-screen notification is
+            // still permitted and still reaches the user.
+            if (alarmId != null) {
+                events.record("could not ring — falling back to a notification")
+                notifier.postRinger(null, fullScreenIntent(alarmId))
+            }
             stopSelf()
             return START_NOT_STICKY
         }
@@ -103,6 +112,20 @@ class AlarmRingerService : Service() {
         Log.w(TAG, "The platform refused to start the alarm in the foreground", refused)
         events.record("ringer REFUSED foreground — stopping")
         false
+    }
+
+    /** How late the platform was, now that the alarm arrives here directly. */
+    private fun recordLateness(intent: Intent?) {
+        val scheduledAt = intent?.getLongExtra(AlarmReceiver.EXTRA_SCHEDULED_AT, 0L) ?: 0L
+        if (scheduledAt <= 0L) return
+        val lateBy = ((System.currentTimeMillis() - scheduledAt).coerceAtLeast(0L)) / 1000
+        events.record(
+            if (lateBy <= GRACE_SECONDS) {
+                "alarm delivered on time (direct to service)"
+            } else {
+                "alarm delivered ${lateBy}s LATE (direct to service)"
+            }
+        )
     }
 
     private fun start(alarmId: String) {
@@ -219,6 +242,7 @@ class AlarmRingerService : Service() {
         private const val RING_TIMEOUT_MILLIS = 2 * 60 * 1000L
         private const val WAKE_LOCK_SLACK_MILLIS = 30 * 1000L
         private const val WAKE_LOCK_TAG = "nesa:alarm-ringer"
+        private const val GRACE_SECONDS = 5L
 
         /** Builds the intent a screen sends back to stop or postpone the alarm. */
         fun command(context: Context, action: String, alarmId: String): Intent =

@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.nesa.core.alarm.DayPlanWorker
 import com.nesa.core.alarm.NesaAlarmCoordinator
+import com.nesa.core.alarm.AlarmEventLog
 import com.nesa.core.alarm.NesaKeepAliveService
 import com.nesa.core.alarm.ReminderScheduler
 import com.nesa.core.model.repository.SettingsRepository
@@ -33,6 +34,7 @@ class NesaApplication : Application(), Configuration.Provider {
     @Inject lateinit var alarmCoordinator: NesaAlarmCoordinator
     @Inject lateinit var reminders: ReminderScheduler
     @Inject lateinit var settings: SettingsRepository
+    @Inject lateinit var events: AlarmEventLog
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -44,6 +46,10 @@ class NesaApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         NesaChannels.ensureCreated(this)
+        // A line here means the process had died and been recreated. Its absence
+        // across an alarm means the process merely slept — different problems
+        // with different answers, and until now indistinguishable.
+        events.record("app process started")
 
         startupScope.launch {
             runCatching { alarmCoordinator.rearmAll() }

@@ -72,6 +72,27 @@ for itself.
 This is why the inexact fallback matters more than it first appears: losing exact
 alarms also loses the exemption that lets the ringer start at all.
 
+## Broadcasts to a frozen app are deferred
+
+Android holds broadcasts destined for an app it has frozen or cached, delivering
+them when something else wakes the process. On a stock phone this rarely matters;
+on one that freezes an app the moment it leaves the screen, it means an alarm
+sent as a broadcast simply waits.
+
+A Transsion device showed this exactly: armed for 23:34:40, delivered at
+23:35:25 — the moment the user reopened the app. Every step after delivery was
+already correct, so the fault was entirely in getting the alarm through the door.
+
+**What NESA does.** `AlarmScheduler` schedules a PendingIntent that starts
+`AlarmRingerService` directly, via `PendingIntent.getForegroundService`, rather
+than a broadcast. A service start is not a broadcast and is not subject to that
+queue. An exact alarm separately exempts the start from the usual ban on
+launching a foreground service from the background, so the two mechanisms
+complement each other.
+
+The receiver's old safety net moved with it: if the service cannot become a
+foreground service, it posts the full-screen notification itself before stopping.
+
 ## An app may not open a screen from the background
 
 Since Android 10 an app cannot start an activity while it is in the background.

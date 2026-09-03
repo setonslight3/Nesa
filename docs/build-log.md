@@ -7,6 +7,20 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — deliver the alarm as a service start, not a broadcast
+
+The overlay permission worked: the trace now shows "alarm screen launched over
+the foreground", and the volume fix is holding at 10/15. But the alarm was still
+withheld until the app was reopened, 44s late.
+
+Untried until now: the alarm was arriving as a **broadcast**, and Android defers
+broadcasts to a frozen app. `PendingIntent.getForegroundService` starts the ringer
+directly and is not subject to that queue.
+
+Also adds the two facts the trace could not previously show — whether the process
+was killed or merely frozen ("app process started"), and whether the keep-alive
+service is genuinely running rather than merely switched on.
+
 ## Pending — the overlay permission, which was never asked for
 
 The volume fix is confirmed working on the device: the alarm rings. Auto-start is

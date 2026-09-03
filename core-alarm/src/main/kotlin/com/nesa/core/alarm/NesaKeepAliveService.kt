@@ -40,6 +40,7 @@ class NesaKeepAliveService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         events.record("keep-alive: started")
     }
 
@@ -50,6 +51,7 @@ class NesaKeepAliveService : Service() {
      * application code will change that.
      */
     override fun onDestroy() {
+        isRunning = false
         events.record("keep-alive: STOPPED")
         super.onDestroy()
     }
@@ -95,6 +97,17 @@ class NesaKeepAliveService : Service() {
     }
 
     companion object {
+        /**
+         * Whether the service is alive right now.
+         *
+         * The toggle being on says only that the user asked for it. This says
+         * whether the phone allowed it, which is a different question and the
+         * one that matters.
+         */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
         private const val TAG = "NesaKeepAlive"
         private const val NOTIFICATION_ID = 1002
         private const val ACTION_STOP = "com.nesa.action.KEEP_ALIVE_STOP"

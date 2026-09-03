@@ -31,6 +31,8 @@ data class ReliabilityStatus(
      * which is exactly what the ringing screen has to do.
      */
     val canAppearOverOtherApps: Boolean = false,
+    /** Whether the keep-alive service is alive, not merely switched on. */
+    val keepAliveRunning: Boolean = false,
     /** Whether the platform is still holding NESA's alarm right now. */
     val alarmArmed: Boolean = false,
     /** The next alarm clock the system knows about, from any app. */
@@ -71,6 +73,7 @@ class BackgroundReliability @Inject constructor(
         ignoringBatteryOptimisations = isIgnoringBatteryOptimisations(),
         notificationsAllowed = notifier.enabled,
         canAppearOverOtherApps = canAppearOverOtherApps(),
+        keepAliveRunning = NesaKeepAliveService.isRunning,
         alarmArmed = coordinator.isPrimaryAlarmArmed(),
         nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis()
     )

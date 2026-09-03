@@ -45,6 +45,8 @@
     <string name="settings_reliability_not_armed">The system is NOT holding an alarm for NESA</string>
     <string name="settings_reliability_not_armed_support">Every permission is granted, so the alarm was accepted and then dropped. On Oppo, Realme and OnePlus this happens when the app is swiped out of recent apps. Open recent apps, find NESA, and lock it (the padlock on the app card) so the system stops killing it.</string>
     <string name="settings_reliability_next_system">Next system alarm: %1$s</string>
+    <string name="settings_reliability_keep_alive_active">Running now — the phone is allowing it.</string>
+    <string name="settings_reliability_keep_alive_dead">Switched on, but NOT running — the phone stopped it.</string>
     <string name="settings_reliability_keep_alive">Keep NESA running</string>
     <string name="settings_reliability_keep_alive_support">Some phones freeze apps the moment you leave them, which stops alarms firing. This keeps NESA running so they still work. It adds a permanent notification you cannot swipe away — that is the cost, and it is the only thing that reliably works on those phones.</string>
     <string name="settings_reliability_handoff_title">Use your phone\'s own alarm instead</string>

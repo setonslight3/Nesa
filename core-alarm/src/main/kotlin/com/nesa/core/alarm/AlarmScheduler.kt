@@ -119,11 +119,11 @@ class AlarmScheduler @Inject constructor(
      * app owns when the app is swiped out of the recents list.
      */
     fun isArmed(alarmId: String): Boolean {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_FIRE
+        val intent = Intent(context, AlarmRingerService::class.java).apply {
+            action = AlarmRingerService.ACTION_START
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         }
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getForegroundService(
             context,
             alarmId.hashCode(),
             intent,
@@ -141,17 +141,30 @@ class AlarmScheduler @Inject constructor(
         alarmManager?.nextAlarmClock?.triggerTime
 
     /**
-     * @param triggerAtMillis carried along so the receiver can report how late
-     *   the platform actually delivered it. PendingIntent equality ignores
-     *   extras, so cancelling and checking still match regardless of this.
+     * Starts the ringer service directly, rather than sending a broadcast.
+     *
+     * This is the difference between an alarm that arrives and one that waits.
+     * Android defers broadcasts to an app it has frozen, holding them until
+     * something wakes the process — which is exactly the symptom seen on a
+     * Transsion device: armed for 23:34:40, delivered at 23:35:25, the moment the
+     * user reopened the app. Every step after delivery was already correct.
+     *
+     * A PendingIntent that starts a foreground service is not a broadcast and is
+     * not subject to that queue. An exact alarm also exempts the start from the
+     * usual ban on launching a foreground service from the background, so the
+     * two work together.
+     *
+     * @param triggerAtMillis travels with the alarm so the service can report how
+     *   late delivery actually was. PendingIntent equality ignores extras, so
+     *   cancelling and the armed check still match regardless.
      */
     private fun firePendingIntent(alarmId: String, triggerAtMillis: Long = 0L): PendingIntent {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_FIRE
+        val intent = Intent(context, AlarmRingerService::class.java).apply {
+            action = AlarmRingerService.ACTION_START
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
             putExtra(AlarmReceiver.EXTRA_SCHEDULED_AT, triggerAtMillis)
         }
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getForegroundService(
             context,
             alarmId.hashCode(),
             intent,
