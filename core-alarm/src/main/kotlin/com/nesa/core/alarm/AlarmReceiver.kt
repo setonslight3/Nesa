@@ -33,7 +33,21 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(EXTRA_ALARM_ID, alarmId)
         }
 
-        events.record("receiver fired — alarm is due")
+        // How late the platform was, which is the one number that separates
+        // "NESA never asked" from "Android did not deliver on time".
+        val scheduledAt = intent.getLongExtra(EXTRA_SCHEDULED_AT, 0L)
+        val lateBy = if (scheduledAt > 0L) {
+            (System.currentTimeMillis() - scheduledAt).coerceAtLeast(0L) / 1000
+        } else {
+            null
+        }
+        events.record(
+            when {
+                lateBy == null -> "receiver fired — alarm is due"
+                lateBy <= GRACE_SECONDS -> "receiver fired on time"
+                else -> "receiver fired ${lateBy}s LATE — the system held it back"
+            }
+        )
 
         try {
             ContextCompat.startForegroundService(context, service)
@@ -66,5 +80,9 @@ class AlarmReceiver : BroadcastReceiver() {
         private const val TAG = "NesaAlarmReceiver"
         const val ACTION_FIRE = "com.nesa.action.ALARM_FIRE"
         const val EXTRA_ALARM_ID = "com.nesa.extra.ALARM_ID"
+        const val EXTRA_SCHEDULED_AT = "com.nesa.extra.SCHEDULED_AT"
+
+        /** Delivery is never to the millisecond; this much is not "late". */
+        private const val GRACE_SECONDS = 5L
     }
 }

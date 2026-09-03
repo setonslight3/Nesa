@@ -7,6 +7,16 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — lateness measurement and keep-alive lifecycle
+
+The trace from the previous build showed NESA's chain working end to end and the
+platform delivering the alarm 3m04s late. This build measures that directly
+rather than leaving it to be worked out by hand: the scheduled time now travels
+in the alarm intent, the receiver records how late delivery was, and the
+keep-alive service records its own start and stop.
+
+No behaviour changes; this is instrumentation.
+
 ## 2026-09-03 — 3885da6 — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).

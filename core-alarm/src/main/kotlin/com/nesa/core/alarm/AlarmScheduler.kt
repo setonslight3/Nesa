@@ -56,7 +56,7 @@ class AlarmScheduler @Inject constructor(
     fun scheduleAt(alarm: Alarm, at: ZonedDateTime): Boolean {
         val manager = alarmManager ?: return false
         val triggerAtMillis = at.toInstant().toEpochMilli()
-        val operation = firePendingIntent(alarm.id)
+        val operation = firePendingIntent(alarm.id, triggerAtMillis)
 
         // Ids and times only: enough to diagnose a silent failure from logcat,
         // without writing the user's plan into the system log.
@@ -140,10 +140,16 @@ class AlarmScheduler @Inject constructor(
     fun nextSystemAlarmClockMillis(): Long? =
         alarmManager?.nextAlarmClock?.triggerTime
 
-    private fun firePendingIntent(alarmId: String): PendingIntent {
+    /**
+     * @param triggerAtMillis carried along so the receiver can report how late
+     *   the platform actually delivered it. PendingIntent equality ignores
+     *   extras, so cancelling and checking still match regardless of this.
+     */
+    private fun firePendingIntent(alarmId: String, triggerAtMillis: Long = 0L): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_FIRE
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_SCHEDULED_AT, triggerAtMillis)
         }
         return PendingIntent.getBroadcast(
             context,

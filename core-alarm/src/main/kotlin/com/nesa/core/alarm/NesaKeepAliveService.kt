@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import com.nesa.core.notifications.NesaChannels
 import com.nesa.core.notifications.R as NotificationsR
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Keeps NESA's process alive so its alarms survive leaving the app.
@@ -33,7 +34,25 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class NesaKeepAliveService : Service() {
 
+    @Inject lateinit var events: AlarmEventLog
+
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        events.record("keep-alive: started")
+    }
+
+    /**
+     * Recorded because this is the evidence that matters. If the trace shows
+     * the service dying and an alarm arriving late afterwards, the phone is
+     * killing it despite the foreground notification, and no amount of
+     * application code will change that.
+     */
+    override fun onDestroy() {
+        events.record("keep-alive: STOPPED")
+        super.onDestroy()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {

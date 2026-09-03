@@ -221,6 +221,41 @@ background service does.
 The device behaviour itself is answered by an optional keep-alive foreground
 service, off by default, since the cost is a permanent notification.
 
+## Gate run 4 — the chain is correct; the platform is late
+
+The on-device trace settled it. From an Infinix Smart 9, with the keep-alive
+service on:
+
+```
+21:56:49  armed for 21:57:49 (exact=true)
+22:00:53  receiver fired — alarm is due
+22:00:53  ringer service start requested
+22:00:53  ringer became a foreground service
+22:00:54  audio: playing
+22:00:54  ring screen opened
+22:01:05  alarm dismissed
+22:01:05  armed for 07:00 (exact=true)
+```
+
+Two conclusions, and neither needed a guess.
+
+**NESA's chain is correct end to end.** Armed as an exact alarm; receiver fired;
+service promoted to the foreground; audio started; the screen opened; the outcome
+was recorded and the next occurrence armed. Nothing in that sequence is missing
+or out of order, and nothing re-armed in between, which rules out NESA cancelling
+its own alarm.
+
+**The platform delivered it three minutes and four seconds late.** Scheduled for
+21:57:49, delivered at 22:00:53. `setAlarmClock` is the strongest guarantee
+Android offers and it was still deferred, which places the remaining fault
+outside the application.
+
+That is now measured rather than inferred: the scheduled time travels with the
+alarm, and the receiver records how late delivery actually was. The keep-alive
+service also records its own start and stop, so a trace showing it dying before a
+late alarm is direct evidence the phone is killing it despite the foreground
+notification.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
