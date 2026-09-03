@@ -7,10 +7,15 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — reminder delivery and background reliability
+## 2026-09-03 — ff390cc — SUCCESS
 
-Needs building and installing. Three changes, all from a device report that
-"nothing fires until I open the app":
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Published APK to GitHub Release `v0.1.0-stage1`. Removed committed binary `apk/NESA-debug.apk` to keep the repo clean.
+
+Lint report regarding permissions:
+- `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`: Lint had NO errors or complaints.
+- `USE_EXACT_ALARM`: Lint reported an informational check on `core-alarm/src/main/AndroidManifest.xml` noting it requires target API 33+ (the app module targets API 35).
+
 
 - Reminders are now armed the moment the plan changes, not only by the
   half-hourly worker.
