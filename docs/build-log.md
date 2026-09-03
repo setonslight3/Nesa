@@ -7,11 +7,24 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — alarm audio, and a keep-alive for phones that freeze apps
+## 2026-09-03 — 02aa068 — FAILED
 
-Device: Infinix Smart 9. The user established that the alarm fires only while
-NESA is on screen, and that when it does surface it is a silent notification and
-popup. Both are now explained and addressed:
+`./gradlew assembleDebug` failed with Kotlin compilation errors in `AlarmRingerService.kt`:
+
+```
+> Task :core-alarm:compileReleaseKotlin FAILED
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:133:47 Unresolved reference 'Alarm'.
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:136:13 Unresolved reference 'delay'.
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:137:26 Unresolved reference 'id'.
+
+> Task :core-alarm:compileDebugKotlin FAILED
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:133:47 Unresolved reference 'Alarm'.
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:136:13 Unresolved reference 'delay'.
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/core-alarm/src/main/kotlin/com/nesa/core/alarm/AlarmRingerService.kt:137:26 Unresolved reference 'id'.
+```
+
+Missing imports in `core-alarm/.../AlarmRingerService.kt`: `com.nesa.core.model.Alarm` and `kotlinx.coroutines.delay`.
+
 
 - **No sound.** The alarm channel is deliberately silent because the ringer
   *service* was meant to make the noise. On this phone the service cannot start
