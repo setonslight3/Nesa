@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import com.nesa.core.alarm.AlarmScreenLauncher
 import com.nesa.core.alarm.NesaAlarmCoordinator
+import com.nesa.core.alarm.ReminderPlanChangeListener
 import com.nesa.core.model.Alarm
 import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.HistoryRepository
@@ -45,13 +46,17 @@ object AppModule {
         activities: ActivityRepository,
         history: HistoryRepository,
         settings: SettingsRepository,
-        clock: Clock
+        clock: Clock,
+        onPlanChanged: ReminderPlanChangeListener
     ): DayPlanner = DayPlanner(
         activities = activities,
         history = history,
         settings = settings,
         clock = clock,
-        idFactory = { UUID.randomUUID().toString() }
+        idFactory = { UUID.randomUUID().toString() },
+        // Arms reminders as soon as the plan changes, rather than leaving it to
+        // the half-hourly worker.
+        onPlanChanged = onPlanChanged
     )
 
     @Provides

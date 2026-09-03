@@ -29,7 +29,12 @@ class DayPlanner(
     private val history: HistoryRepository,
     private val settings: SettingsRepository,
     private val clock: Clock,
-    private val idFactory: () -> String
+    private val idFactory: () -> String,
+    /**
+     * Notified after every write, so the platform layer can re-arm reminders
+     * for the plan that now exists rather than the one that used to.
+     */
+    private val onPlanChanged: PlanChangeListener = PlanChangeListener.None
 ) {
 
     /**
@@ -58,6 +63,11 @@ class DayPlanner(
         val updated = AdaptiveScheduler.applyTo(afterMisses, result)
         val changed = updated.filterIndexed { index, block -> block != afterMisses[index].block }
         activities.updateBlocks(changed)
+
+        // Reminders follow the plan, so they are re-armed here rather than only
+        // by the background worker. Adding an activity for ten minutes' time has
+        // to arm its reminder now; half an hour later is not a reminder.
+        onPlanChanged.onPlanChanged(date)
 
         return result
     }

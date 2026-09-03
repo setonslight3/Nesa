@@ -36,8 +36,10 @@ kotlin {
 
 dependencies {
     implementation(project(":core-model"))
-    // For the notification permission state shown next to the reminder toggle.
+    // For the notification permission state shown next to the reminder toggle,
+    // and for the alarm reliability checks.
     implementation(project(":core-notifications"))
+    implementation(project(":core-alarm"))
     implementation(project(":core-ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

@@ -17,6 +17,14 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
 
+    <!--
+      Lets NESA ask to be exempt from battery optimisation. Waking a user at a
+      time they chose is one of the uses this exemption exists for, and without
+      it Doze and App Standby defer the alarm indefinitely. The user is asked in
+      context from the reliability screen, never silently.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />

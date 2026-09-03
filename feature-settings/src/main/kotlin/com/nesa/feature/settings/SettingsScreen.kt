@@ -1,5 +1,6 @@
 package com.nesa.feature.settings
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -71,7 +73,7 @@ fun SettingsScreen(
         mutableStateOf(state.settings.displayName.orEmpty())
     }
 
-    LaunchedEffect(Unit) { viewModel.refreshNotificationPermission() }
+    LaunchedEffect(Unit) { viewModel.refreshPermissions() }
 
     NesaScaffold(
         title = stringResource(R.string.settings_title),
@@ -97,6 +99,13 @@ fun SettingsScreen(
                 label = { Text(stringResource(R.string.settings_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
+            )
+
+            SectionHeader(title = stringResource(R.string.settings_reliability_title))
+            ReliabilitySection(
+                state = state,
+                onOpen = { intent -> intent?.let(context::startActivity) },
+                viewModel = viewModel
             )
 
             SectionHeader(title = stringResource(R.string.settings_day_title))
@@ -232,6 +241,106 @@ fun SettingsScreen(
             },
             onDismiss = { editingField = null }
         )
+    }
+}
+
+/**
+ * Says plainly whether the alarm can be trusted, and offers the fix for each
+ * thing that is missing.
+ *
+ * The failure this prevents is the worst one NESA has: an alarm that does not
+ * ring because Android quietly declined to run the app in the background, with
+ * nothing anywhere saying so.
+ */
+@Composable
+private fun ReliabilitySection(
+    state: SettingsUiState,
+    onOpen: (Intent?) -> Unit,
+    viewModel: SettingsViewModel
+) {
+    val reliability = state.reliability
+    // Read here, not inside the click lambda: LocalContext is a composable read
+    // and a lambda is not a composable scope.
+    val packageName = LocalContext.current.packageName
+
+    NoticeCard(
+        text = stringResource(
+            if (reliability.isFullyReliable) {
+                R.string.settings_reliability_ok
+            } else {
+                R.string.settings_reliability_problem
+            }
+        ),
+        emphasis = if (reliability.isFullyReliable) {
+            NoticeEmphasis.INFORMATION
+        } else {
+            NoticeEmphasis.WARNING
+        }
+    )
+
+    // Battery optimisation is first because it is the most common cause by a
+    // wide margin, and the only one with a one-tap system prompt.
+    PermissionRow(
+        title = stringResource(R.string.settings_reliability_battery),
+        supportingText = stringResource(R.string.settings_reliability_battery_support),
+        granted = reliability.ignoringBatteryOptimisations,
+        onFix = { onOpen(viewModel.batteryOptimisationRequest()) }
+    )
+    PermissionRow(
+        title = stringResource(R.string.settings_reliability_exact),
+        supportingText = stringResource(R.string.settings_reliability_exact_support),
+        granted = reliability.exactAlarmsAllowed,
+        onFix = { onOpen(viewModel.exactAlarmSettings()) }
+    )
+    PermissionRow(
+        title = stringResource(R.string.settings_reliability_notifications),
+        supportingText = stringResource(R.string.settings_reliability_notifications_support),
+        granted = reliability.notificationsAllowed,
+        onFix = { onOpen(viewModel.notificationSettingsIntent(packageName)) }
+    )
+
+    // No API exposes the manufacturer auto-start switches, so the honest move is
+    // to say what to look for rather than pretend NESA can check it.
+    NoticeCard(text = stringResource(R.string.settings_reliability_manufacturer))
+    TextButton(onClick = { onOpen(viewModel.appDetailsSettings()) }) {
+        Text(stringResource(R.string.settings_reliability_open_app_settings))
+    }
+}
+
+@Composable
+private fun PermissionRow(
+    title: String,
+    supportingText: String,
+    granted: Boolean,
+    onFix: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = NesaSpacing.touchTarget)
+            .padding(vertical = NesaSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(NesaSpacing.md)
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (granted) {
+            Text(
+                text = stringResource(R.string.settings_reliability_granted),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else {
+            FilledTonalButton(onClick = onFix) {
+                Text(stringResource(R.string.settings_reliability_fix))
+            }
+        }
     }
 }
 

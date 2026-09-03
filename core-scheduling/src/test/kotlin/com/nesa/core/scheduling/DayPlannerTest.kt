@@ -27,13 +27,15 @@ class DayPlannerTest {
         settings: FakeSettingsRepository = FakeSettingsRepository(
             NesaSettings.Default.copy(dayWindow = TestWindow)
         ),
-        now: LocalDateTime
+        now: LocalDateTime,
+        onPlanChanged: PlanChangeListener = PlanChangeListener.None
     ) = DayPlanner(
         activities = activities,
         history = history,
         settings = settings,
         clock = clockAt(now),
-        idFactory = { "record-1" }
+        idFactory = { "record-1" },
+        onPlanChanged = onPlanChanged
     )
 
     @Test
@@ -107,6 +109,38 @@ class DayPlannerTest {
 
         assertEquals(at(9, 0), activities.block("lecture")?.start)
         assertEquals(at(11, 0), activities.block("gym")?.start)
+    }
+
+    @Test
+    fun `every refresh reports the plan so reminders can be re-armed`() = runTest {
+        // The platform layer arms reminders from this callback. Without it,
+        // an activity added for ten minutes' time had nothing scheduled until
+        // the half-hourly worker next ran — which is not a reminder.
+        val reported = mutableListOf<java.time.LocalDate>()
+        val activities = FakeActivityRepository(listOf(planned("study", at(14, 0), 60)))
+
+        planner(
+            activities,
+            now = on(9, 0),
+            onPlanChanged = PlanChangeListener { date -> reported += date }
+        ).refresh(TestDate)
+
+        assertEquals(listOf(TestDate), reported)
+    }
+
+    @Test
+    fun `the plan is reported even when nothing moved`() = runTest {
+        // A quiet day still needs its reminders armed.
+        val reported = mutableListOf<java.time.LocalDate>()
+        val activities = FakeActivityRepository(emptyList())
+
+        planner(
+            activities,
+            now = on(9, 0),
+            onPlanChanged = PlanChangeListener { date -> reported += date }
+        ).refresh(TestDate)
+
+        assertEquals(listOf(TestDate), reported)
     }
 
     @Test

@@ -9,6 +9,8 @@ import com.nesa.core.model.GuidancePersonality
 import com.nesa.core.model.NesaSettings
 import com.nesa.core.model.ThemeMode
 import com.nesa.core.model.repository.SettingsRepository
+import com.nesa.core.alarm.BackgroundReliability
+import com.nesa.core.alarm.ReliabilityStatus
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +24,12 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val settings: NesaSettings = NesaSettings.Default,
-    val notificationsAllowed: Boolean = true
+    val notificationsAllowed: Boolean = true,
+    val reliability: ReliabilityStatus = ReliabilityStatus(
+        exactAlarmsAllowed = true,
+        ignoringBatteryOptimisations = true,
+        notificationsAllowed = true
+    )
 )
 
 /**
@@ -36,24 +43,41 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
-    private val notifier: NesaNotifier
+    private val notifier: NesaNotifier,
+    private val reliability: BackgroundReliability
 ) : ViewModel() {
 
     private val notificationsAllowed = MutableStateFlow(notifier.enabled)
+    private val reliabilityStatus = MutableStateFlow(reliability.status())
 
     val state: StateFlow<SettingsUiState> =
-        combine(settings.settings, notificationsAllowed) { preferences, allowed ->
-            SettingsUiState(settings = preferences, notificationsAllowed = allowed)
+        combine(settings.settings, notificationsAllowed, reliabilityStatus) { preferences, allowed, status ->
+            SettingsUiState(
+                settings = preferences,
+                notificationsAllowed = allowed,
+                reliability = status
+            )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = SettingsUiState()
         )
 
-    /** Re-checked on resume: the user may have changed the grant in Android. */
-    fun refreshNotificationPermission() {
+    /**
+     * Re-checked on resume, because every one of these is granted in a system
+     * screen the user leaves NESA to visit — so the answer is routinely stale by
+     * the time they come back.
+     */
+    fun refreshPermissions() {
         notificationsAllowed.value = notifier.enabled
+        reliabilityStatus.value = reliability.status()
     }
+
+    fun batteryOptimisationRequest(): Intent = reliability.batteryOptimisationRequest()
+
+    fun exactAlarmSettings(): Intent? = reliability.exactAlarmSettings()
+
+    fun appDetailsSettings(): Intent = reliability.appDetailsSettings()
 
     fun onThemeModeChanged(mode: ThemeMode) = viewModelScope.launch {
         settings.setThemeMode(mode)

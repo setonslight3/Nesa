@@ -55,10 +55,14 @@ class ReminderScheduler @Inject constructor(
     fun scheduleAt(blockId: String, triggerAtMillis: Long) {
         val manager = alarmManager ?: return
         try {
-            manager.setWindow(
+            // setAndAllowWhileIdle, not setWindow. Both are inexact — NESA still
+            // does not spend its exact-alarm allowance on reminders — but only
+            // this one wakes the device from Doze. With setWindow, a reminder on
+            // an idle phone was simply not delivered until something else woke
+            // the device, which in practice meant opening the app.
+            manager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
-                REMINDER_WINDOW_MILLIS,
                 pendingIntent(blockId)
             )
         } catch (denied: SecurityException) {
@@ -85,6 +89,5 @@ class ReminderScheduler @Inject constructor(
 
     private companion object {
         const val TAG = "NesaReminderScheduler"
-        const val REMINDER_WINDOW_MILLIS = 2 * 60 * 1000L
     }
 }
