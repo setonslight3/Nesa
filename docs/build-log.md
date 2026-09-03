@@ -7,11 +7,11 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — alarm arming diagnostic
+## 2026-09-03 — 3f6e2d4 — SUCCESS
 
-Device report: every permission in the reliability screen reads Granted, and the
-alarm still does not fire until the app is opened. That rules permissions out,
-so this build adds the measurement that distinguishes the two remaining causes:
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
 
 - `AlarmScheduler.isArmed` asks the platform, via `FLAG_NO_CREATE`, whether it is
   still holding NESA's alarm. Armed but not ringing, versus never armed at all,
