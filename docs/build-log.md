@@ -7,10 +7,15 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — audio guard fix, and an on-device alarm trace
+## 2026-09-03 — 3885da6 — SUCCESS
 
-Device report: with keep-alive on, the alarm still did not ring. It produced a
-notification and the challenge screen, never a sound. And the decisive new fact:
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Fixed audio player guard flag `isPlaying` so failed playback doesn't lock out subsequent attempts.
+- Added on-device alarm trace (`AlarmEventLog`) displayed directly in the reliability screen under "What the alarm actually did".
+
 **staying inside the app did not fire it either** — it only fired after leaving
 the app and coming back. That rules out background freezing as the whole story.
 
