@@ -120,14 +120,18 @@ class AlarmRingerService : Service() {
             acquireWakeLock()
             audio.start(alarm)
 
-            // Try to directly display the AlarmRingActivity if possible
+            // With the overlay permission held this succeeds and the alarm takes
+            // over the screen; without it Android silently refuses the launch and
+            // only the notification remains.
             try {
                 val ringIntent = screenLauncher.ringingIntent(this@AlarmRingerService, alarmId).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 }
                 startActivity(ringIntent)
+                events.record("alarm screen launched over the foreground")
             } catch (e: Exception) {
                 Log.w(TAG, "Could not start AlarmRingActivity directly", e)
+                events.record("could not launch the alarm screen: ${e.javaClass.simpleName}")
             }
 
             startUnansweredTimeout(alarm)

@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.nesa.core.notifications.NesaNotifier
@@ -60,6 +61,15 @@ class AlarmReceiver : BroadcastReceiver() {
             // reaches the user even though nothing can play a sound for it.
             Log.w(TAG, "Foreground start refused; falling back to a notification", refused)
             events.record("service REFUSED by platform — notification only, no sound")
+            // Whether NESA was even permitted to open a screen from the
+            // background at that moment, so the trace says why it could not.
+            events.record(
+                if (Settings.canDrawOverlays(context)) {
+                    "overlay permission held"
+                } else {
+                    "NO overlay permission — cannot open the alarm screen from the background"
+                }
+            )
             notifier.postRinger(null, fullScreenIntent(context, alarmId))
         }
     }

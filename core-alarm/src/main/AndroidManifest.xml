@@ -40,6 +40,23 @@
     <!-- Lets the alarm take over a locked screen, as an alarm clock must. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+    <!--
+      The permission that lets the ringing screen appear over whatever else is
+      on the phone.
+
+      Android forbids starting an activity from the background, and holding this
+      is one of the documented exemptions — so without it, the alarm screen can
+      only be offered as a notification and hope the user taps it. Declaring it
+      is also what makes NESA appear in Settings > Special app access > Display
+      over other apps at all; an app that does not declare it is simply absent
+      from that list, which is why it could never be granted.
+
+      It is requested in context from the reliability screen, never silently, and
+      NESA draws no overlay of its own — it wants only the background-start
+      exemption that comes with it.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application>
 
         <!--

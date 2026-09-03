@@ -72,6 +72,41 @@ for itself.
 This is why the inexact fallback matters more than it first appears: losing exact
 alarms also loses the exemption that lets the ringer start at all.
 
+## An app may not open a screen from the background
+
+Since Android 10 an app cannot start an activity while it is in the background.
+For most apps that is a welcome rule; for an alarm clock it is the whole feature,
+because the ringing screen *is* the alarm.
+
+The documented exemptions are few, and the one an alarm app can actually obtain
+is **`SYSTEM_ALERT_WINDOW`** — "Display over other apps". An app holding it may
+launch an activity from the background.
+
+**What NESA does.** It declares the permission and asks for it from the
+reliability screen. Two things follow from declaring it that are easy to miss:
+
+- An app that does not declare `SYSTEM_ALERT_WINDOW` does not appear in
+  Settings → Special app access → Display over other apps **at all**, so the user
+  cannot grant it even if they go looking. NESA was invisible in that list for
+  exactly this reason.
+- NESA draws no overlay window of its own. It wants only the background-start
+  exemption that comes with the permission.
+
+Without it, the ringer can still post a full-screen-intent notification, but the
+system decides whether to honour it — and on a phone that is already reluctant to
+run the app, it usually does not.
+
+## A device may not appear in the exact-alarm list, and that is correct
+
+`USE_EXACT_ALARM` (Android 13+) is granted automatically to applications whose
+core purpose is an alarm clock, and it is **not user-revocable**. Apps holding it
+therefore do *not* appear under Settings → Special app access → Alarms &
+reminders, which lists only apps holding the revocable `SCHEDULE_EXACT_ALARM`.
+
+NESA's absence from that list is the stronger position, not a missing permission.
+The reliability screen reads the capability directly, which is why it reports
+exact alarms as granted while the system list does not mention NESA at all.
+
 ## Notifications can be refused
 
 `POST_NOTIFICATIONS` is a runtime permission from Android 13, and it can be

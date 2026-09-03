@@ -297,6 +297,14 @@ private fun ReliabilitySection(
         granted = reliability.exactAlarmsAllowed,
         onFix = { onOpen(viewModel.exactAlarmSettings()) }
     )
+    // Second only to battery optimisation in how often it is the actual cause,
+    // and unlike that one it has never been asked for at all.
+    PermissionRow(
+        title = stringResource(R.string.settings_reliability_overlay),
+        supportingText = stringResource(R.string.settings_reliability_overlay_support),
+        granted = reliability.canAppearOverOtherApps,
+        onFix = { onOpen(viewModel.overlaySettings()) }
+    )
     PermissionRow(
         title = stringResource(R.string.settings_reliability_notifications),
         supportingText = stringResource(R.string.settings_reliability_notifications_support),

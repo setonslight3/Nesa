@@ -25,6 +25,12 @@ data class ReliabilityStatus(
     val exactAlarmsAllowed: Boolean,
     val ignoringBatteryOptimisations: Boolean,
     val notificationsAllowed: Boolean,
+    /**
+     * "Display over other apps". Holding it is one of Android's documented
+     * exemptions from the ban on starting an activity from the background,
+     * which is exactly what the ringing screen has to do.
+     */
+    val canAppearOverOtherApps: Boolean = false,
     /** Whether the platform is still holding NESA's alarm right now. */
     val alarmArmed: Boolean = false,
     /** The next alarm clock the system knows about, from any app. */
@@ -32,7 +38,8 @@ data class ReliabilityStatus(
 ) {
     /** True when no permission is standing in the way of a dependable alarm. */
     val isFullyReliable: Boolean
-        get() = exactAlarmsAllowed && ignoringBatteryOptimisations && notificationsAllowed
+        get() = exactAlarmsAllowed && ignoringBatteryOptimisations &&
+            notificationsAllowed && canAppearOverOtherApps
 
     /**
      * Every permission is granted but the platform is not holding the alarm.
@@ -63,6 +70,7 @@ class BackgroundReliability @Inject constructor(
         exactAlarmsAllowed = exactAlarms.isExact,
         ignoringBatteryOptimisations = isIgnoringBatteryOptimisations(),
         notificationsAllowed = notifier.enabled,
+        canAppearOverOtherApps = canAppearOverOtherApps(),
         alarmArmed = coordinator.isPrimaryAlarmArmed(),
         nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis()
     )
@@ -91,6 +99,17 @@ class BackgroundReliability @Inject constructor(
      */
     fun batteryOptimisationRequest(): Intent =
         Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+
+    /**
+     * True when NESA may put a window over other apps — and therefore when it
+     * may launch the ringing screen from the background at all.
+     */
+    fun canAppearOverOtherApps(): Boolean = Settings.canDrawOverlays(context)
+
+    fun overlaySettings(): Intent =
+        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
             data = Uri.fromParts("package", context.packageName, null)
         }
 

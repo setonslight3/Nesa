@@ -59,7 +59,8 @@ class SettingsViewModel @Inject constructor(
         ReliabilityStatus(
             exactAlarmsAllowed = true,
             ignoringBatteryOptimisations = true,
-            notificationsAllowed = true
+            notificationsAllowed = true,
+            canAppearOverOtherApps = true
         )
     )
 
@@ -127,6 +128,8 @@ class SettingsViewModel @Inject constructor(
     fun batteryOptimisationRequest(): Intent = reliability.batteryOptimisationRequest()
 
     fun exactAlarmSettings(): Intent? = reliability.exactAlarmSettings()
+
+    fun overlaySettings(): Intent = reliability.overlaySettings()
 
     fun appDetailsSettings(): Intent = reliability.appDetailsSettings()
 

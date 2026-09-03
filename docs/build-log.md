@@ -7,6 +7,23 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — the overlay permission, which was never asked for
+
+The volume fix is confirmed working on the device: the alarm rings. Auto-start is
+now enabled and the alarm is still not firing with the app in the background.
+
+Device screenshots showed why NESA was missing from Settings → Special app access
+→ Display over other apps: it never declared `SYSTEM_ALERT_WINDOW`, and an app
+that does not declare it is absent from that list entirely. Holding it is one of
+Android's documented exemptions from the ban on starting an activity from the
+background, which is precisely what the ringing screen must do.
+
+Declared, surfaced in the reliability screen with its own Fix button, and
+recorded in the alarm trace so the next run says whether it was held.
+
+New permission: `android.permission.SYSTEM_ALERT_WINDOW`. It is requested in
+context and NESA draws no overlay of its own.
+
 ## 2026-09-03 — 16e690d — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).

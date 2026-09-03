@@ -33,6 +33,8 @@
     <string name="settings_reliability_battery_support">Without this, Android delays or drops alarms while the phone is idle. This is the single most common reason an alarm does not ring.</string>
     <string name="settings_reliability_exact">Allow exact alarms</string>
     <string name="settings_reliability_exact_support">Without this, the alarm can drift by several minutes.</string>
+    <string name="settings_reliability_overlay">Allow display over other apps</string>
+    <string name="settings_reliability_overlay_support">Android forbids apps from opening a screen while in the background. This permission is the exemption — without it NESA can only post a notification and hope you tap it, instead of showing the alarm itself.</string>
     <string name="settings_reliability_notifications">Allow notifications</string>
     <string name="settings_reliability_notifications_support">Without this, NESA cannot show the alarm screen or send reminders.</string>
     <string name="settings_reliability_granted">Granted</string>
