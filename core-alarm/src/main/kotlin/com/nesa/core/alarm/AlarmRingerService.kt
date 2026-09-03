@@ -20,7 +20,9 @@ import com.nesa.core.model.Alarm
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -49,7 +51,10 @@ class AlarmRingerService : Service() {
     @Inject lateinit var notifier: NesaNotifier
     @Inject lateinit var screenLauncher: AlarmScreenLauncher
 
-    private val scope = CoroutineScope(SupervisorJob())
+    // Main-thread scope: the notification, the player and the vibrator are all
+    // main-thread affine, and the repository calls suspend onto their own
+    // dispatchers anyway.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var timeoutJob: Job? = null
@@ -60,28 +65,65 @@ class AlarmRingerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val alarmId = intent?.getStringExtra(AlarmReceiver.EXTRA_ALARM_ID)
 
+        // Android allows five seconds between startForegroundService and
+        // startForeground, and kills the process if the deadline passes. So this
+        // happens first, synchronously, on every path — including the ones that
+        // only stop the alarm, which are still started as foreground services and
+        // would otherwise crash. Nothing that touches the database comes before it.
+        if (!promoteToForeground(alarmId)) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         when (intent?.action) {
-            ACTION_START -> alarmId?.let(::start)
-            ACTION_SNOOZE -> alarmId?.let { finish(it, Outcome.SNOOZED) }
-            ACTION_DISMISS -> alarmId?.let { finish(it, Outcome.DISMISSED) }
-            ACTION_SLEEP_IN -> alarmId?.let { finish(it, Outcome.SLEEPING_IN) }
-            else -> stopSelf()
+            ACTION_START -> if (alarmId != null) start(alarmId) else stopEverything()
+            ACTION_SNOOZE -> if (alarmId != null) finish(alarmId, Outcome.SNOOZED) else stopEverything()
+            ACTION_DISMISS -> if (alarmId != null) finish(alarmId, Outcome.DISMISSED) else stopEverything()
+            ACTION_SLEEP_IN -> if (alarmId != null) finish(alarmId, Outcome.SLEEPING_IN) else stopEverything()
+            else -> stopEverything()
         }
         // The alarm is only meaningful at the moment it fires; there is nothing
         // useful to restore if the process dies afterwards.
         return START_NOT_STICKY
     }
 
+    /**
+     * Becomes a foreground service immediately, with a placeholder label.
+     *
+     * The real label needs a database read, and waiting for one here is what
+     * would blow the five-second deadline. The notification is refined once the
+     * alarm loads.
+     *
+     * @return false when the platform refused the promotion, in which case the
+     *   caller must stop rather than continue as a background service that
+     *   Android will kill mid-ring.
+     */
+    private fun promoteToForeground(alarmId: String?): Boolean = try {
+        startForeground(
+            NesaNotifier.RINGER_NOTIFICATION_ID,
+            notifier.buildRingerNotification(null, alarmId?.let(::fullScreenIntent))
+        )
+        true
+    } catch (refused: IllegalStateException) {
+        // Android 12+ throws ForegroundServiceStartNotAllowedException, a
+        // subclass of IllegalStateException, when a background start is not
+        // exempt. Caught by supertype so this compiles and runs on API 26 too.
+        Log.w(TAG, "The platform refused to start the alarm in the foreground", refused)
+        false
+    }
+
     private fun start(alarmId: String) {
         currentAlarmId = alarmId
         scope.launch {
-            val alarm = alarms.find(alarmId)
+            val alarm = runCatching { alarms.find(alarmId) }.getOrNull()
             if (alarm == null) {
-                stopSelf()
+                // The alarm was deleted between being scheduled and firing.
+                stopEverything()
                 return@launch
             }
 
-            startForeground(NOTIFICATION_ID, notifier.buildRingerNotification(alarm.label, fullScreenIntent(alarmId)))
+            // Now that the label is known, refine the notification already showing.
+            notifier.postRinger(alarm.label, fullScreenIntent(alarmId))
             acquireWakeLock()
             beginRinging(alarm)
             startUnansweredTimeout(alarm)
@@ -152,14 +194,24 @@ class AlarmRingerService : Service() {
     private fun finish(alarmId: String, outcome: Outcome) {
         timeoutJob?.cancel()
         scope.launch {
-            when (outcome) {
-                Outcome.SNOOZED -> coordinator.snooze(alarmId, ZonedDateTime.now())
-                Outcome.UNANSWERED -> coordinator.retryAfterSilence(alarmId, ZonedDateTime.now())
-                Outcome.DISMISSED, Outcome.SLEEPING_IN -> coordinator.dismiss(alarmId)
-            }
-            stopRinging()
-            stopSelf()
+            // Rearming must not be skipped because something else threw, or a
+            // repeating alarm would silently stop repeating.
+            runCatching {
+                when (outcome) {
+                    Outcome.SNOOZED -> coordinator.snooze(alarmId, ZonedDateTime.now())
+                    Outcome.UNANSWERED -> coordinator.retryAfterSilence(alarmId, ZonedDateTime.now())
+                    Outcome.DISMISSED, Outcome.SLEEPING_IN -> coordinator.dismiss(alarmId)
+                }
+            }.onFailure { Log.w(TAG, "Could not settle alarm $alarmId after $outcome", it) }
+            stopEverything()
         }
+    }
+
+    /** Stops the sound, drops the notification, and leaves the foreground. */
+    private fun stopEverything() {
+        stopRinging()
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     private fun stopRinging() {
@@ -217,7 +269,6 @@ class AlarmRingerService : Service() {
         const val ACTION_SLEEP_IN = "com.nesa.action.RING_SLEEP_IN"
 
         private const val TAG = "NesaAlarmRinger"
-        private const val NOTIFICATION_ID = 1001
         private const val FADE_STEPS_PER_SECOND = 4
         private const val RING_TIMEOUT_MILLIS = 2 * 60 * 1000L
         private const val WAKE_LOCK_SLACK_MILLIS = 30 * 1000L

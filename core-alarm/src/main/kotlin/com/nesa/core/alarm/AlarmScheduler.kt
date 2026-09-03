@@ -39,7 +39,15 @@ class AlarmScheduler @Inject constructor(
      */
     fun scheduleNext(alarm: Alarm, from: ZonedDateTime = ZonedDateTime.now()): ZonedDateTime? {
         cancel(alarm.id)
-        val next = NextAlarmCalculator.next(alarm, from) ?: return null
+        val next = NextAlarmCalculator.next(alarm, from)
+        if (next == null) {
+            Log.w(
+                TAG,
+                "Alarm ${alarm.id} has no next occurrence " +
+                    "(enabled=${alarm.enabled}, days=${alarm.days.size}) — nothing armed"
+            )
+            return null
+        }
         return if (scheduleAt(alarm, next)) next else null
     }
 
@@ -48,6 +56,10 @@ class AlarmScheduler @Inject constructor(
         val manager = alarmManager ?: return false
         val triggerAtMillis = at.toInstant().toEpochMilli()
         val operation = firePendingIntent(alarm.id)
+
+        // Ids and times only: enough to diagnose a silent failure from logcat,
+        // without writing the user's plan into the system log.
+        Log.i(TAG, "Arming ${alarm.id} for $at (exact=${capability.isExact})")
 
         return try {
             if (capability.isExact) {

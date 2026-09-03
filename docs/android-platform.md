@@ -46,6 +46,32 @@ justification property, which is what the platform asks for in exactly this
 situation. A Play Store submission will need that justification restated in the
 console.
 
+## A foreground service must announce itself within five seconds
+
+`startForegroundService()` starts a service in a special state, and Android
+kills the process if `startForeground()` is not called within five seconds.
+Separately, Android 12 forbids starting a foreground service from a background
+broadcast at all — unless the broadcast came from an *exact* alarm.
+
+Both rules caught the first version of NESA's ringer, and the symptom was the
+worst possible one: the alarm time arrived and nothing happened, silently.
+
+**What NESA does.** `AlarmRingerService.onStartCommand` calls `startForeground`
+**first, synchronously, on every path** — including the ones that only stop the
+alarm, which are also started as foreground services and would otherwise crash
+on their own. The notification starts with a placeholder label and is refined
+once the alarm is read from the database, because waiting for that read is
+exactly what blew the deadline.
+
+`AlarmReceiver` catches a refused start (`ForegroundServiceStartNotAllowedException`
+is an `IllegalStateException`, so it is caught by supertype and compiles on API
+26) and falls back to posting the full-screen notification directly, which is
+always permitted. The alarm still reaches the user; it just cannot play a sound
+for itself.
+
+This is why the inexact fallback matters more than it first appears: losing exact
+alarms also loses the exemption that lets the ringer start at all.
+
 ## Notifications can be refused
 
 `POST_NOTIFICATIONS` is a runtime permission from Android 13, and it can be

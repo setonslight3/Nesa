@@ -14,4 +14,5 @@
 
     <string name="nesa_reminder_window">%1$s to %2$s</string>
     <string name="nesa_alarm_ringing">Tap to wake up</string>
+    <string name="nesa_alarm_label_default">Alarm</string>
 </resources>

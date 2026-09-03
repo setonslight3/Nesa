@@ -75,12 +75,19 @@ class NesaNotifier @Inject constructor(
         return post(item.block.id.hashCode(), notification)
     }
 
-    /** The quiet notice that accompanies the alarm's foreground service. */
-    fun buildRingerNotification(label: String, fullScreenIntent: PendingIntent?): Notification {
+    /**
+     * The alarm notification.
+     *
+     * It is both the foreground-service notice and, when the platform refuses to
+     * let NESA start that service from the background, the alarm itself — which
+     * is why it carries the full-screen intent rather than merely announcing a
+     * service that does.
+     */
+    fun buildRingerNotification(label: String?, fullScreenIntent: PendingIntent?): Notification {
         ensureChannels()
         return NotificationCompat.Builder(context, NesaChannels.ALARM)
             .setSmallIcon(R.drawable.ic_nesa_notification)
-            .setContentTitle(label)
+            .setContentTitle(label ?: context.getString(R.string.nesa_alarm_label_default))
             .setContentText(context.getString(R.string.nesa_alarm_ringing))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -96,6 +103,21 @@ class NesaNotifier @Inject constructor(
                 }
             }
             .build()
+    }
+
+    /**
+     * Posts the alarm notification directly, without a foreground service.
+     *
+     * This is the fallback path for Android 12 and later, which forbids starting
+     * a foreground service from a background broadcast unless the alarm that
+     * triggered it was an exact one. A full-screen notification is always
+     * permitted, so the alarm still reaches the user — quieter, but present.
+     */
+    fun postRinger(label: String?, fullScreenIntent: PendingIntent?): Boolean =
+        post(RINGER_NOTIFICATION_ID, buildRingerNotification(label, fullScreenIntent))
+
+    fun cancelRinger() {
+        NotificationManagerCompat.from(context).cancel(RINGER_NOTIFICATION_ID)
     }
 
     fun cancel(blockId: String) {
@@ -119,6 +141,14 @@ class NesaNotifier @Inject constructor(
             launch,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    companion object {
+        /**
+         * Shared so the ringer service's foreground notification and the
+         * background fallback are the same notification, not two competing ones.
+         */
+        const val RINGER_NOTIFICATION_ID: Int = 1001
     }
 
     private fun actionIntent(blockId: String, action: ActivityAction): PendingIntent {

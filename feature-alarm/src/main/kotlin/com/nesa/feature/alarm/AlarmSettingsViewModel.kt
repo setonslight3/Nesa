@@ -141,7 +141,9 @@ class AlarmSettingsViewModel @Inject constructor(
                 nextRing = NextAlarmCalculator.next(updated, ZonedDateTime.now(clock))
             )
         }
-        viewModelScope.launch { coordinator.save(updated) }
+        // Deliberately not on viewModelScope: leaving this screen must never
+        // cancel the write that arms the alarm.
+        coordinator.saveDetached(updated)
     }
 
     private companion object {

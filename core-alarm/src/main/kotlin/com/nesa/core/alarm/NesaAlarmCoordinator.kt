@@ -4,6 +4,10 @@ import android.util.Log
 import com.nesa.core.model.Alarm
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.scheduling.NextAlarmCalculator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,11 +27,35 @@ class NesaAlarmCoordinator @Inject constructor(
     private val sessions: AlarmSessionStore
 ) {
 
+    /**
+     * Application-lifetime scope for writes that must not be tied to a screen.
+     *
+     * A user who picks an alarm time and immediately navigates away would
+     * otherwise have the save cancelled with the view model that started it —
+     * and an alarm that silently failed to save is the worst bug this class
+     * could have.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Fire-and-forget [save], for callers whose lifetime is shorter than the write. */
+    fun saveDetached(alarm: Alarm) {
+        scope.launch {
+            runCatching { save(alarm) }
+                .onFailure { Log.w(TAG, "Could not save alarm ${alarm.id}", it) }
+        }
+    }
+
     /** Persists an alarm and then arms it. Used by the alarm settings screen. */
     suspend fun save(alarm: Alarm) {
         alarms.save(alarm)
         sessions.clear(alarm.id)
-        if (alarm.enabled) scheduler.scheduleNext(alarm) else scheduler.cancel(alarm.id)
+        if (alarm.enabled) {
+            val armed = scheduler.scheduleNext(alarm)
+            Log.i(TAG, "Saved ${alarm.id}; next ring ${armed ?: "none"}")
+        } else {
+            scheduler.cancel(alarm.id)
+            Log.i(TAG, "Saved ${alarm.id} disabled; nothing armed")
+        }
     }
 
     suspend fun delete(alarmId: String) {

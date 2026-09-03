@@ -146,6 +146,32 @@ exists and was reviewed; "verified" means it was executed.
 verified. The rest compile and are structurally sound, but have not been watched
 working on a device.
 
+## Gate run 1 — the alarm did not fire
+
+The first attempt at check 1 failed: the alarm time arrived and nothing
+happened, with no sound and no screen. An audit of the alarm path found three
+defects, all in the handoff from the broadcast receiver to the ringing service,
+and any one of them alone is enough to produce exactly that silence:
+
+1. **`startForeground()` was called inside a coroutine**, after a database read.
+   Android allows five seconds from `startForegroundService()` and kills the
+   process when that passes.
+2. **Three paths never called it at all** — the alarm-deleted case, and all three
+   of snooze, dismiss and sleep-in, which `AlarmRingActivity` also starts as
+   foreground services.
+3. **Android 12+ blocks a background foreground-service start** unless the
+   triggering alarm was exact. The inexact fallback therefore lost not just
+   punctuality but the alarm entirely.
+
+A fourth defect was found while fixing those: the alarm settings screen saved on
+`viewModelScope`, so leaving the screen quickly could cancel the write that armed
+the alarm.
+
+All four are fixed, and the alarm path now logs each decision so a future silent
+failure is diagnosable from logcat rather than by inspection. **None of this is
+unit-testable** — it is service lifecycle behaviour — so it needs a device to
+confirm, which is the point of running the gate.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
