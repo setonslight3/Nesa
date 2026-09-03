@@ -8,9 +8,11 @@ import com.nesa.core.model.DayWindow
 import com.nesa.core.model.GuidancePersonality
 import com.nesa.core.model.NesaSettings
 import com.nesa.core.model.ThemeMode
+import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.model.repository.SettingsRepository
 import com.nesa.core.alarm.BackgroundReliability
 import com.nesa.core.alarm.KeepAliveController
+import com.nesa.core.alarm.SystemAlarmHandoff
 import com.nesa.core.alarm.ReliabilityStatus
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,7 +49,9 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val notifier: NesaNotifier,
     private val reliability: BackgroundReliability,
-    private val keepAlive: KeepAliveController
+    private val keepAlive: KeepAliveController,
+    private val systemAlarm: SystemAlarmHandoff,
+    private val alarms: AlarmRepository
 ) : ViewModel() {
 
     private val notificationsAllowed = MutableStateFlow(notifier.enabled)
@@ -97,6 +101,23 @@ class SettingsViewModel @Inject constructor(
             onArmed(at)
         }
     }
+
+    val systemAlarmAvailable: Boolean get() = systemAlarm.isAvailable
+
+    /**
+     * Builds the handoff intent for the current alarm and hands it back for the
+     * screen to launch. The intent is returned rather than started here so this
+     * class never needs a Context, and null means there was no alarm to hand
+     * over rather than a silent failure.
+     */
+    fun onHandOffToSystemAlarm(onReady: (Intent?) -> Unit) {
+        viewModelScope.launch {
+            val alarm = alarms.alarms().firstOrNull()
+            onReady(alarm?.let(systemAlarm::createIntent))
+        }
+    }
+
+    fun systemAlarmListIntent(): Intent = systemAlarm.showAlarmsIntent()
 
     fun onClearAlarmEvents() {
         reliability.clearEvents()

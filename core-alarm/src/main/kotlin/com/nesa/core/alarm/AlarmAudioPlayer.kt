@@ -133,13 +133,23 @@ class AlarmAudioPlayer @Inject constructor(
         val audio = context.getSystemService<AudioManager>() ?: return "unknown"
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
         val current = audio.getStreamVolume(AudioManager.STREAM_ALARM)
-        if (current > 0) return "$current/$max"
 
-        val raised = (max * SILENT_STREAM_RECOVERY).toInt().coerceAtLeast(1)
+        // Checking for exactly zero was not enough. A device reported 1/15 — not
+        // silent, but under seven per cent of maximum, and the player's own fade
+        // multiplies that down again. The alarm reported itself as playing and
+        // could not be heard. Anything under the threshold is treated as silent,
+        // because an alarm nobody can hear has already failed.
+        if (current >= max * AUDIBLE_FRACTION) return "$current/$max"
+
+        val raised = (max * RECOVERED_FRACTION).toInt().coerceAtLeast(1)
         val ok = runCatching {
             audio.setStreamVolume(AudioManager.STREAM_ALARM, raised, 0)
         }.isSuccess
-        return if (ok) "was 0/$max — raised to $raised" else "0/$max and could not be raised"
+        return if (ok) {
+            "was $current/$max — too quiet to hear, raised to $raised"
+        } else {
+            "$current/$max and could not be raised"
+        }
     }
 
     @Synchronized
@@ -191,7 +201,13 @@ class AlarmAudioPlayer @Inject constructor(
     private companion object {
         const val TAG = "NesaAlarmAudio"
         const val FADE_STEPS_PER_SECOND = 4
-        const val START_VOLUME = 0.25f
-        const val SILENT_STREAM_RECOVERY = 0.7f
+        /** Where the fade begins. The stream is guaranteed audible by then. */
+        const val START_VOLUME = 0.35f
+
+        /** Below this share of maximum, an alarm is not going to wake anybody. */
+        const val AUDIBLE_FRACTION = 0.4f
+
+        /** Loud enough to wake someone, short of the top of the scale. */
+        const val RECOVERED_FRACTION = 0.7f
     }
 }

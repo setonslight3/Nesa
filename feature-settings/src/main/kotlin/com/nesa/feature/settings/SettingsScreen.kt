@@ -375,6 +375,36 @@ private fun ReliabilitySection(
     }
     testMessage?.let { NoticeCard(text = it) }
 
+    // The way out for a phone that will not run a third-party alarm on time.
+    if (viewModel.systemAlarmAvailable) {
+        var handoffMessage by remember { mutableStateOf<String?>(null) }
+        val handedOff = stringResource(R.string.settings_reliability_handoff_done)
+        val handoffFailed = stringResource(R.string.settings_reliability_handoff_failed)
+
+        SectionHeader(title = stringResource(R.string.settings_reliability_handoff_title))
+        NoticeCard(text = stringResource(R.string.settings_reliability_handoff_body))
+        Row(horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+            FilledTonalButton(
+                onClick = {
+                    viewModel.onHandOffToSystemAlarm { intent ->
+                        handoffMessage = if (intent == null) {
+                            handoffFailed
+                        } else {
+                            onOpen(intent)
+                            handedOff
+                        }
+                    }
+                }
+            ) {
+                Text(stringResource(R.string.settings_reliability_handoff_create))
+            }
+            TextButton(onClick = { onOpen(viewModel.systemAlarmListIntent()) }) {
+                Text(stringResource(R.string.settings_reliability_handoff_show))
+            }
+        }
+        handoffMessage?.let { NoticeCard(text = it) }
+    }
+
     // The alarm's own trace. Whichever step is missing is the bug, and reading
     // it needs no adb, no cable and no laptop.
     SectionHeader(

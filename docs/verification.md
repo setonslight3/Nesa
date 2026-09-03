@@ -265,6 +265,57 @@ service also records its own start and stop, so a trace showing it dying before 
 late alarm is direct evidence the phone is killing it despite the foreground
 notification.
 
+## Gate run 5 — two traces, two separate answers
+
+Two controlled tests on the Infinix, and they separate the problems cleanly.
+
+**In the foreground, delivery is perfect.**
+
+```
+22:27:02  armed for 22:28:02 (exact=true)
+22:28:02  receiver fired on time
+22:28:03  audio: alarm volume 1/15
+22:28:03  audio: playing
+```
+
+**In the background, the alarm is withheld until the app is reopened.**
+
+```
+22:30:03  armed for 22:31:03 (exact=true)
+22:35:21  receiver fired 257s LATE — the system held it back
+```
+
+So NESA's scheduling is correct, and the delivery problem is entirely the phone
+declining to run the process. Neither trace contains a `keep-alive` line, and the
+alarm was withheld anyway, so the keep-alive service is not helping on this
+device.
+
+**And the silence had a completely separate cause.** The alarm stream was at
+1/15 — under seven per cent of maximum — which the player then multiplied by its
+own fade floor of 0.25, giving about 1.7% of maximum. Audible to nobody. The
+earlier check only raised the volume from *exactly* zero, so 1/15 walked straight
+past it. Anything below 40% of maximum is now treated as silent and raised, and
+the fade floor is higher.
+
+That is worth separating: the alarm has been inaudible on every run for a reason
+that has nothing to do with the delivery problem, and fixing delivery would never
+have revealed it.
+
+### The device ceiling, and the way past it
+
+Transsion's software will not run a third-party alarm reliably in the background,
+and a foreground service does not change its mind. That is a ceiling application
+code cannot pass.
+
+The clock app that shipped with the phone is exempt from all of it. So
+`SystemAlarmHandoff` lets the user hand NESA's wake time to that app through
+`AlarmClock.ACTION_SET_ALARM`, a documented public API. What is lost is stated on
+the screen rather than glossed: the wake challenge does not run, dismissal
+happens in the clock app, and NESA cannot later change or delete what it created
+because Android exposes no API for that. It is therefore a deliberate handoff the
+user performs, not a background sync that would fill their clock app with
+duplicates.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take

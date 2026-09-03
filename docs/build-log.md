@@ -7,6 +7,20 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — audible volume floor, and handoff to the phone's clock app
+
+Two traces from the Infinix separated two problems. Delivery is correct in the
+foreground and withheld in the background; that is the device, not NESA. The
+silence was unrelated: the alarm stream sat at 1/15 and the player's fade floor
+multiplied it down to roughly 1.7% of maximum. The previous check only raised
+from exactly zero.
+
+Anything under 40% of maximum is now treated as inaudible and raised, and
+`SystemAlarmHandoff` offers the wake time to the phone's own clock app for
+devices where NESA's own alarm cannot be trusted.
+
+New permission: `com.android.alarm.permission.SET_ALARM`.
+
 ## 2026-09-03 — e91cfa6 — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).

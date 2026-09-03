@@ -25,6 +25,13 @@
     -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!--
+      Lets NESA hand its wake time to the phone's own clock app, for devices that
+      will not run a third-party alarm reliably. The user performs the handoff;
+      NESA never creates a system alarm on its own.
+    -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />

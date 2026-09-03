@@ -45,6 +45,13 @@
     <string name="settings_reliability_next_system">Next system alarm: %1$s</string>
     <string name="settings_reliability_keep_alive">Keep NESA running</string>
     <string name="settings_reliability_keep_alive_support">Some phones freeze apps the moment you leave them, which stops alarms firing. This keeps NESA running so they still work. It adds a permanent notification you cannot swipe away — that is the cost, and it is the only thing that reliably works on those phones.</string>
+    <string name="settings_reliability_handoff_title">Use your phone\'s own alarm instead</string>
+    <string name="settings_reliability_handoff_body">If NESA\'s alarm keeps arriving late on this phone, hand the wake time to the clock app that came with it. That alarm is exempt from the limits NESA is subject to, so it will ring on time.\n\nWhat you give up: the wake challenge does not run, you dismiss it in the clock app, and NESA cannot change or remove it afterwards — Android does not allow that. Change the time here and hand it over again, then delete the old one.</string>
+    <string name="settings_reliability_handoff_create">Set this alarm in the clock app</string>
+    <string name="settings_reliability_handoff_show">Open the clock app\'s alarms</string>
+    <string name="settings_reliability_handoff_done">Handed to the clock app. Check it looks right.</string>
+    <string name="settings_reliability_handoff_failed">No clock app on this phone accepted it.</string>
+
     <string name="settings_reliability_events">What the alarm actually did</string>
     <string name="settings_reliability_events_empty">Nothing recorded yet. Run the test below, then look here.</string>
     <string name="settings_reliability_events_clear">Clear</string>
