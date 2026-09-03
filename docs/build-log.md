@@ -7,9 +7,16 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## 2026-09-03 — e706b41 — FAILED, fixed in the commit that follows
+## 2026-09-03 — 68bb079 — SUCCESS
 
-`:core-alarm:compileDebugKotlin` and `compileReleaseKotlin` both failed:
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Audio moved to `AlarmAudioPlayer` (drivable directly from foreground activity).
+- `NesaKeepAliveService` foreground service for aggressive background task killer ROMs (e.g. Infinix / Transsion).
+- Unanswered timeout import fixes.
+
 
 ```
 AlarmRingerService.kt:133:47 Unresolved reference 'Alarm'.
