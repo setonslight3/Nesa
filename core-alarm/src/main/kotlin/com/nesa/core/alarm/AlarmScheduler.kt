@@ -61,28 +61,40 @@ class AlarmScheduler @Inject constructor(
         // without writing the user's plan into the system log.
         Log.i(TAG, "Arming ${alarm.id} for $at (exact=${capability.isExact})")
 
-        return try {
-            if (capability.isExact) {
+        if (capability.isExact) {
+            try {
                 // setAlarmClock is the strongest guarantee Android offers, and it
                 // surfaces the alarm in the status bar so the user can see it.
                 manager.setAlarmClock(
                     AlarmManager.AlarmClockInfo(triggerAtMillis, showPendingIntent()),
                     operation
                 )
-            } else {
-                // Without exact alarms the wake time can drift, but an
-                // approximate alarm still beats no alarm at all.
-                manager.setWindow(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    INEXACT_WINDOW_MILLIS,
-                    operation
-                )
+                return true
+            } catch (denied: SecurityException) {
+                Log.w(TAG, "setAlarmClock refused for alarm ${alarm.id}, trying exact while idle", denied)
+                try {
+                    manager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        operation
+                    )
+                    return true
+                } catch (deniedExact: SecurityException) {
+                    Log.w(TAG, "setExactAndAllowWhileIdle refused for alarm ${alarm.id}, falling back to setAndAllowWhileIdle", deniedExact)
+                }
             }
+        }
+
+        return try {
+            // setAndAllowWhileIdle wakes the device even in Doze mode without requiring exact alarm permissions
+            manager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                operation
+            )
             true
-        } catch (denied: SecurityException) {
-            // The permission can be revoked between the check and the call.
-            Log.w(TAG, "Alarm ${alarm.id} was refused by the platform", denied)
+        } catch (e: Exception) {
+            Log.e(TAG, "All alarm scheduling mechanisms failed for alarm ${alarm.id}", e)
             false
         }
     }

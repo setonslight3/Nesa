@@ -14,6 +14,7 @@ import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.getSystemService
 import com.nesa.core.model.Alarm
@@ -125,6 +126,17 @@ class AlarmRingerService : Service() {
             // Now that the label is known, refine the notification already showing.
             notifier.postRinger(alarm.label, fullScreenIntent(alarmId))
             acquireWakeLock()
+
+            // Try to directly display the AlarmRingActivity if possible
+            try {
+                val ringIntent = screenLauncher.ringingIntent(this@AlarmRingerService, alarmId).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                startActivity(ringIntent)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not start AlarmRingActivity directly", e)
+            }
+
             beginRinging(alarm)
             startUnansweredTimeout(alarm)
         }
@@ -132,22 +144,37 @@ class AlarmRingerService : Service() {
 
     private fun beginRinging(alarm: Alarm) {
         try {
-            val uri = alarm.soundUri?.let(Uri::parse)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            player = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                )
-                setDataSource(this@AlarmRingerService, uri)
-                isLooping = true
-                setVolume(0f, 0f)
-                prepare()
-                start()
+            val defaultUris = listOfNotNull(
+                alarm.soundUri?.let(Uri::parse),
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                Settings.System.DEFAULT_ALARM_ALERT_URI
+            )
+
+            for (uri in defaultUris) {
+                try {
+                    player = MediaPlayer().apply {
+                        setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build()
+                        )
+                        setDataSource(this@AlarmRingerService, uri)
+                        isLooping = true
+                        setVolume(0.25f, 0.25f)
+                        prepare()
+                        start()
+                    }
+                    fadeIn(alarm.fadeInSeconds)
+                    break
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to initialize player with uri: $uri", e)
+                    player?.release()
+                    player = null
+                }
             }
-            fadeIn(alarm.fadeInSeconds)
         } catch (error: Exception) {
             // A missing or unplayable ringtone must not silently kill the alarm:
             // vibration alone still wakes most people.
@@ -161,9 +188,7 @@ class AlarmRingerService : Service() {
         val steps = (seconds.coerceIn(0, 120) * FADE_STEPS_PER_SECOND).coerceAtLeast(1)
         scope.launch {
             repeat(steps) { step ->
-                // Perceived loudness is closer to the square of the amplitude,
-                // so a squared ramp sounds like a smooth rise.
-                val progress = ((step + 1).toFloat() / steps).pow(2)
+                val progress = 0.25f + 0.75f * ((step + 1).toFloat() / steps).pow(2)
                 player?.runCatching { setVolume(progress, progress) }
                 delay(1_000L / FADE_STEPS_PER_SECOND)
             }

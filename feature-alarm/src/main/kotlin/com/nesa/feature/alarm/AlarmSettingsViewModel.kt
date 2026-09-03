@@ -59,7 +59,7 @@ class AlarmSettingsViewModel @Inject constructor(
 
     fun onEnabledChanged(enabled: Boolean) = update { it.copy(enabled = enabled) }
 
-    fun onTimeChanged(time: LocalTime) = update { it.copy(time = time) }
+    fun onTimeChanged(time: LocalTime) = update { it.copy(time = time, enabled = true) }
 
     fun onDayToggled(day: DayOfWeek) = update { alarm ->
         alarm.copy(days = if (day in alarm.days) alarm.days - day else alarm.days + day)
@@ -112,8 +112,8 @@ class AlarmSettingsViewModel @Inject constructor(
         val alarm = existing ?: Alarm(
             id = UUID.randomUUID().toString(),
             time = preferences.dayWindow.wakeTime,
-            days = WEEKDAYS,
-            enabled = false
+            days = DayOfWeek.entries.toSet(),
+            enabled = true
         ).also {
             // Persist immediately so the screen always edits a real row rather
             // than a draft that could be lost.
@@ -144,15 +144,5 @@ class AlarmSettingsViewModel @Inject constructor(
         // Deliberately not on viewModelScope: leaving this screen must never
         // cancel the write that arms the alarm.
         coordinator.saveDetached(updated)
-    }
-
-    private companion object {
-        val WEEKDAYS = setOf(
-            DayOfWeek.MONDAY,
-            DayOfWeek.TUESDAY,
-            DayOfWeek.WEDNESDAY,
-            DayOfWeek.THURSDAY,
-            DayOfWeek.FRIDAY
-        )
     }
 }
