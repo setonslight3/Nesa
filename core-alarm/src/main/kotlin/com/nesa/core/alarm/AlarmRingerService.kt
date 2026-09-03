@@ -4,20 +4,10 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.media.RingtoneManager
-import android.net.Uri
-import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
-import android.provider.Settings
 import android.util.Log
 import androidx.core.content.getSystemService
-import com.nesa.core.model.Alarm
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.AndroidEntryPoint
@@ -27,11 +17,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import javax.inject.Inject
-import kotlin.math.pow
 
 /**
  * Rings the alarm.
@@ -51,12 +39,11 @@ class AlarmRingerService : Service() {
     @Inject lateinit var coordinator: NesaAlarmCoordinator
     @Inject lateinit var notifier: NesaNotifier
     @Inject lateinit var screenLauncher: AlarmScreenLauncher
+    @Inject lateinit var audio: AlarmAudioPlayer
 
-    // Main-thread scope: the notification, the player and the vibrator are all
-    // main-thread affine, and the repository calls suspend onto their own
-    // dispatchers anyway.
+    // Main-thread scope: the notification and the audio player are main-thread
+    // affine, and the repository calls suspend onto their own dispatchers anyway.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var player: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var timeoutJob: Job? = null
     private var currentAlarmId: String? = null
@@ -126,6 +113,7 @@ class AlarmRingerService : Service() {
             // Now that the label is known, refine the notification already showing.
             notifier.postRinger(alarm.label, fullScreenIntent(alarmId))
             acquireWakeLock()
+            audio.start(alarm)
 
             // Try to directly display the AlarmRingActivity if possible
             try {
@@ -137,74 +125,8 @@ class AlarmRingerService : Service() {
                 Log.w(TAG, "Could not start AlarmRingActivity directly", e)
             }
 
-            beginRinging(alarm)
             startUnansweredTimeout(alarm)
         }
-    }
-
-    private fun beginRinging(alarm: Alarm) {
-        try {
-            val defaultUris = listOfNotNull(
-                alarm.soundUri?.let(Uri::parse),
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-                Settings.System.DEFAULT_ALARM_ALERT_URI
-            )
-
-            for (uri in defaultUris) {
-                try {
-                    player = MediaPlayer().apply {
-                        setAudioAttributes(
-                            AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ALARM)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                                .build()
-                        )
-                        setDataSource(this@AlarmRingerService, uri)
-                        isLooping = true
-                        setVolume(0.25f, 0.25f)
-                        prepare()
-                        start()
-                    }
-                    fadeIn(alarm.fadeInSeconds)
-                    break
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to initialize player with uri: $uri", e)
-                    player?.release()
-                    player = null
-                }
-            }
-        } catch (error: Exception) {
-            // A missing or unplayable ringtone must not silently kill the alarm:
-            // vibration alone still wakes most people.
-            Log.w(TAG, "Could not play the alarm sound; falling back to vibration", error)
-        }
-
-        if (alarm.vibrate) startVibration()
-    }
-
-    private fun fadeIn(seconds: Int) {
-        val steps = (seconds.coerceIn(0, 120) * FADE_STEPS_PER_SECOND).coerceAtLeast(1)
-        scope.launch {
-            repeat(steps) { step ->
-                val progress = 0.25f + 0.75f * ((step + 1).toFloat() / steps).pow(2)
-                player?.runCatching { setVolume(progress, progress) }
-                delay(1_000L / FADE_STEPS_PER_SECOND)
-            }
-        }
-    }
-
-    private fun startVibration() {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            getSystemService<VibratorManager>()?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService<Vibrator>()
-        } ?: return
-
-        val pattern = longArrayOf(0, 500, 800)
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, 0))
     }
 
     /** Stops ringing if nobody answers, and asks for a retry. */
@@ -240,17 +162,7 @@ class AlarmRingerService : Service() {
     }
 
     private fun stopRinging() {
-        player?.runCatching {
-            stop()
-            release()
-        }
-        player = null
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            getSystemService<VibratorManager>()?.defaultVibrator?.cancel()
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService<Vibrator>()?.cancel()
-        }
+        audio.stop()
         releaseWakeLock()
     }
 
@@ -294,7 +206,6 @@ class AlarmRingerService : Service() {
         const val ACTION_SLEEP_IN = "com.nesa.action.RING_SLEEP_IN"
 
         private const val TAG = "NesaAlarmRinger"
-        private const val FADE_STEPS_PER_SECOND = 4
         private const val RING_TIMEOUT_MILLIS = 2 * 60 * 1000L
         private const val WAKE_LOCK_SLACK_MILLIS = 30 * 1000L
         private const val WAKE_LOCK_TAG = "nesa:alarm-ringer"

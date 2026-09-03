@@ -341,6 +341,15 @@ private fun ReliabilitySection(
         )
     }
 
+    // Offered, never imposed: a permanent notification is a real cost, so this
+    // stays off until the user decides their phone needs it.
+    SwitchRow(
+        title = stringResource(R.string.settings_reliability_keep_alive),
+        supportingText = stringResource(R.string.settings_reliability_keep_alive_support),
+        checked = state.settings.keepAliveEnabled,
+        onCheckedChange = viewModel::onKeepAliveChanged
+    )
+
     var testMessage by remember { mutableStateOf<String?>(null) }
     val armedTemplate = stringResource(R.string.settings_reliability_test_armed)
     val failedMessage = stringResource(R.string.settings_reliability_test_failed)

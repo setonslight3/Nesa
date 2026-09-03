@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nesa.core.model.Alarm
 import com.nesa.core.ui.format.formatted
 import com.nesa.core.ui.theme.NesaSpacing
 import java.time.LocalTime
@@ -34,11 +35,18 @@ import java.time.LocalTime
  */
 @Composable
 fun AlarmRingScreen(
+    onAlarmLoaded: (Alarm) -> Unit,
     onOutcome: (RingOutcome) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AlarmRingViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Reported as soon as the alarm is known so the screen can start the sound
+    // when the ringer service could not.
+    LaunchedEffect(state.alarm) {
+        state.alarm?.let(onAlarmLoaded)
+    }
 
     LaunchedEffect(state.outcome) {
         if (state.outcome != RingOutcome.NONE) {

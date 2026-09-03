@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.nesa.core.alarm.AlarmAudioPlayer
 import com.nesa.core.alarm.AlarmReceiver
 import com.nesa.core.alarm.AlarmRingerService
 import com.nesa.core.model.NesaSettings
@@ -36,6 +37,17 @@ class AlarmRingActivity : ComponentActivity() {
 
     @Inject lateinit var settings: SettingsRepository
 
+    /**
+     * The screen plays the alarm as well as the service does.
+     *
+     * On phones that refuse to start a foreground service from the background,
+     * the service never runs and the notification that replaces it is silent —
+     * so this screen, launched by the full-screen intent, is the only thing left
+     * that can make a noise. The player is a singleton and ignores a second
+     * start, so when the service did run this changes nothing.
+     */
+    @Inject lateinit var audio: AlarmAudioPlayer
+
     private val preferences = MutableStateFlow(NesaSettings.Default)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +69,10 @@ class AlarmRingActivity : ComponentActivity() {
         setContent {
             val current by preferences.collectAsStateWithLifecycle()
             NesaTheme(themeMode = current.themeMode) {
-                AlarmRingScreen(onOutcome = { outcome -> handle(outcome, alarmId) })
+                AlarmRingScreen(
+                    onAlarmLoaded = { alarm -> audio.start(alarm) },
+                    onOutcome = { outcome -> handle(outcome, alarmId) }
+                )
             }
         }
     }
@@ -70,10 +85,15 @@ class AlarmRingActivity : ComponentActivity() {
             RingOutcome.SLEEP_IN -> AlarmRingerService.ACTION_SLEEP_IN
             RingOutcome.NONE -> return
         }
-        ContextCompat.startForegroundService(
-            this,
-            AlarmRingerService.command(this, action, alarmId)
-        )
+        // Stop the sound here rather than relying on the service, which on a
+        // restricted phone was never running to be told.
+        audio.stop()
+        runCatching {
+            ContextCompat.startForegroundService(
+                this,
+                AlarmRingerService.command(this, action, alarmId)
+            )
+        }
         finish()
     }
 

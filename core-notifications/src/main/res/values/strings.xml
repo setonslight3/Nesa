@@ -15,4 +15,6 @@
     <string name="nesa_reminder_window">%1$s to %2$s</string>
     <string name="nesa_alarm_ringing">Tap to wake up</string>
     <string name="nesa_alarm_label_default">Alarm</string>
+    <string name="nesa_keep_alive_title">NESA is ready</string>
+    <string name="nesa_keep_alive_text">Keeping your alarms working on this phone.</string>
 </resources>

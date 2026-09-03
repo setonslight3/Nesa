@@ -10,6 +10,7 @@ import com.nesa.core.model.NesaSettings
 import com.nesa.core.model.ThemeMode
 import com.nesa.core.model.repository.SettingsRepository
 import com.nesa.core.alarm.BackgroundReliability
+import com.nesa.core.alarm.KeepAliveController
 import com.nesa.core.alarm.ReliabilityStatus
 import com.nesa.core.notifications.NesaNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +45,8 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val notifier: NesaNotifier,
-    private val reliability: BackgroundReliability
+    private val reliability: BackgroundReliability,
+    private val keepAlive: KeepAliveController
 ) : ViewModel() {
 
     private val notificationsAllowed = MutableStateFlow(notifier.enabled)
@@ -110,6 +112,16 @@ class SettingsViewModel @Inject constructor(
 
     fun onRemindersEnabledChanged(enabled: Boolean) = viewModelScope.launch {
         settings.setRemindersEnabled(enabled)
+    }
+
+    /**
+     * Turning this on starts the keep-alive service immediately, rather than at
+     * the next launch — the user turned it on because their alarms are failing
+     * now.
+     */
+    fun onKeepAliveChanged(enabled: Boolean) = viewModelScope.launch {
+        settings.setKeepAliveEnabled(enabled)
+        if (enabled) keepAlive.start() else keepAlive.stop()
     }
 
     fun onDisplayNameChanged(name: String) = viewModelScope.launch {

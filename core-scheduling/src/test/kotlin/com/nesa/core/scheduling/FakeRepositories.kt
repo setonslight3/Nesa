@@ -129,6 +129,10 @@ class FakeSettingsRepository(initial: NesaSettings = NesaSettings.Default) : Set
         state.value = state.value.copy(remindersEnabled = enabled)
     }
 
+    override suspend fun setKeepAliveEnabled(enabled: Boolean) {
+        state.value = state.value.copy(keepAliveEnabled = enabled)
+    }
+
     override suspend fun setPrimaryAlarmId(alarmId: String?) {
         state.value = state.value.copy(primaryAlarmId = alarmId)
     }
