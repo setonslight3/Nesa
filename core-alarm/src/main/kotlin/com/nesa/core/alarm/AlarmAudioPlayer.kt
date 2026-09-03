@@ -2,6 +2,7 @@ package com.nesa.core.alarm
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
@@ -107,6 +108,7 @@ class AlarmAudioPlayer @Inject constructor(
         }
 
         isPlaying = player != null
+        events.record("audio: alarm volume ${describeAlarmVolume()}")
         if (player == null) {
             // Left false on purpose, so whoever tries next is allowed to.
             Log.w(TAG, "No alarm sound could be played; vibration only")
@@ -115,6 +117,29 @@ class AlarmAudioPlayer @Inject constructor(
             events.record("audio: playing")
         }
         if (alarm.vibrate) startVibration()
+    }
+
+    /**
+     * Makes sure the alarm stream can actually be heard, and says what it found.
+     *
+     * `MediaPlayer.setVolume` is a multiplier on top of the system's alarm
+     * stream, so a stream sitting at zero produces silence no matter what the
+     * player does — and the trace would still read "playing". An alarm at zero
+     * volume is not an alarm, so NESA raises it, but only from silence and only
+     * to a moderate level: quietly overriding a volume the user chose would be
+     * its own kind of rude.
+     */
+    private fun describeAlarmVolume(): String {
+        val audio = context.getSystemService<AudioManager>() ?: return "unknown"
+        val max = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+        val current = audio.getStreamVolume(AudioManager.STREAM_ALARM)
+        if (current > 0) return "$current/$max"
+
+        val raised = (max * SILENT_STREAM_RECOVERY).toInt().coerceAtLeast(1)
+        val ok = runCatching {
+            audio.setStreamVolume(AudioManager.STREAM_ALARM, raised, 0)
+        }.isSuccess
+        return if (ok) "was 0/$max — raised to $raised" else "0/$max and could not be raised"
     }
 
     @Synchronized
@@ -167,5 +192,6 @@ class AlarmAudioPlayer @Inject constructor(
         const val TAG = "NesaAlarmAudio"
         const val FADE_STEPS_PER_SECOND = 4
         const val START_VOLUME = 0.25f
+        const val SILENT_STREAM_RECOVERY = 0.7f
     }
 }

@@ -15,7 +15,11 @@ rather than leaving it to be worked out by hand: the scheduled time now travels
 in the alarm intent, the receiver records how late delivery was, and the
 keep-alive service records its own start and stop.
 
-No behaviour changes; this is instrumentation.
+Also checks the system alarm stream volume when ringing and records it. A stream
+sitting at zero produces silence however healthy the player is, and the trace
+would still read "playing" — so this closes the one remaining way the alarm can
+report success and make no sound. NESA raises it only from actual zero, and only
+to a moderate level.
 
 ## 2026-09-03 — 3885da6 — SUCCESS
 

@@ -245,10 +245,19 @@ was recorded and the next occurrence armed. Nothing in that sequence is missing
 or out of order, and nothing re-armed in between, which rules out NESA cancelling
 its own alarm.
 
-**The platform delivered it three minutes and four seconds late.** Scheduled for
-21:57:49, delivered at 22:00:53. `setAlarmClock` is the strongest guarantee
-Android offers and it was still deferred, which places the remaining fault
-outside the application.
+**The alarm was not delivered until the app was reopened.** Scheduled for
+21:57:49, delivered at 22:00:53 — and the user reports that 22:00:53 is the
+moment they returned to the app. So this is not three minutes of delivery
+jitter, which is how it first reads. The broadcast was not delivered *at all*
+while the process was not running, and arrived the instant the process came
+back. `setAlarmClock` is the strongest guarantee Android offers and it was still
+withheld, which places the remaining fault outside the application.
+
+The distinction matters: jitter would be a tuning problem, while a broadcast
+held until process start is the phone refusing to run NESA at all — and it means
+the keep-alive service is either not running or not being respected. The build
+that follows records the service's own start and stop so that is no longer a
+guess.
 
 That is now measured rather than inferred: the scheduled time travels with the
 alarm, and the receiver records how late delivery actually was. The keep-alive
