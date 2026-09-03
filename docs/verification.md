@@ -198,6 +198,29 @@ Two were corrected:
   lock screen, and putting authentication between a half-asleep person and their
   alarm is the wrong trade.
 
+## Gate run 3 — the device, not the code
+
+Every permission in the reliability screen read Granted — background execution,
+exact alarms, notifications — and the alarm still did not fire. That eliminated
+permissions, and the user then established the decisive fact: **the alarm fires
+only while NESA is on screen.** Leaving the app, without even closing it, stops
+it. The phone is an Infinix Smart 9.
+
+That is not a bug. Transsion's software (Infinix, Tecno, itel) freezes an app
+when it leaves the foreground, and a frozen process does not receive its alarms.
+No permission changes it because it is not a permission.
+
+It did expose one real defect. The user also reported that when the alarm did
+surface it was a silent notification and popup. The alarm channel sets its sound
+to null deliberately, because `AlarmRingerService` was meant to do the ringing —
+so when the receiver's notification fallback ran in place of the service, nothing
+could make a noise. Audio now lives in `AlarmAudioPlayer`, which the ringing
+screen drives as well; a foreground activity has none of the restrictions a
+background service does.
+
+The device behaviour itself is answered by an optional keep-alive foreground
+service, off by default, since the cost is a permanent notification.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
