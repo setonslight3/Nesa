@@ -7,10 +7,15 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — audible volume floor, and handoff to the phone's clock app
+## 2026-09-03 — 16e690d — SUCCESS
 
-Two traces from the Infinix separated two problems. Delivery is correct in the
-foreground and withheld in the background; that is the device, not NESA. The
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Audible volume floor: Any system alarm volume below 40% is raised automatically to guarantee audibility during alarm fade-in.
+- Phone Clock App Handoff (`SystemAlarmHandoff`): Allows syncing NESA's alarm directly to the device's native stock clock app (`SET_ALARM` intent) as an emergency fallback on OEM ROMs that suppress third-party background alarms.
+
 silence was unrelated: the alarm stream sat at 1/15 and the player's fade floor
 multiplied it down to roughly 1.7% of maximum. The previous check only raised
 from exactly zero.
