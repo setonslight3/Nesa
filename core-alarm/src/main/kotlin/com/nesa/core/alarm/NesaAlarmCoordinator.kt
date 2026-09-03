@@ -112,6 +112,29 @@ class NesaAlarmCoordinator @Inject constructor(
         return if (scheduler.scheduleAt(alarm, at)) at else null
     }
 
+    /**
+     * Arms the first alarm a short time from now, leaving everything else alone.
+     *
+     * A test that goes through the real scheduling and ringing path is the only
+     * way to tell "the alarm was never armed" from "the alarm was armed and the
+     * device dropped it" without a debugger attached. The regular schedule is
+     * restored on the next save, boot, or launch.
+     */
+    suspend fun armTestAlarm(secondsFromNow: Long = 60L): ZonedDateTime? {
+        val alarm = alarms.alarms().firstOrNull() ?: return null
+        val at = ZonedDateTime.now().plusSeconds(secondsFromNow)
+        Log.i(TAG, "Arming test alarm ${alarm.id} for $at")
+        return if (scheduler.scheduleAt(alarm, at)) at else null
+    }
+
+    /** True when the platform is still holding an alarm for the first alarm. */
+    suspend fun isPrimaryAlarmArmed(): Boolean {
+        val alarm = alarms.alarms().firstOrNull() ?: return false
+        return scheduler.isArmed(alarm.id)
+    }
+
+    fun nextSystemAlarmClockMillis(): Long? = scheduler.nextSystemAlarmClockMillis()
+
     /** The alarm is finished for today; arm the next occurrence if it repeats. */
     suspend fun dismiss(alarmId: String) {
         val alarm = alarms.find(alarmId) ?: return

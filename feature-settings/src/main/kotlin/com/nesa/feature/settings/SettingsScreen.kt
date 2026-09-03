@@ -49,7 +49,11 @@ import com.nesa.core.ui.component.SwitchRow
 import com.nesa.core.ui.component.TimeField
 import com.nesa.core.ui.format.label
 import com.nesa.core.ui.theme.NesaSpacing
+import java.time.Instant
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 /**
  * Settings.
@@ -298,6 +302,68 @@ private fun ReliabilitySection(
         granted = reliability.notificationsAllowed,
         onFix = { onOpen(viewModel.notificationSettingsIntent(packageName)) }
     )
+
+    // Whether the platform is actually holding the alarm. Permissions can all be
+    // granted and the alarm still be gone, and only this tells them apart.
+    val timeFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }
+    Text(
+        text = stringResource(
+            if (reliability.alarmArmed) {
+                R.string.settings_reliability_armed
+            } else {
+                R.string.settings_reliability_not_armed
+            }
+        ),
+        style = MaterialTheme.typography.bodyLarge,
+        color = if (reliability.alarmArmed) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
+    )
+    reliability.nextSystemAlarmMillis?.let { millis ->
+        Text(
+            text = stringResource(
+                R.string.settings_reliability_next_system,
+                Instant.ofEpochMilli(millis)
+                    .atZone(ZoneId.systemDefault())
+                    .format(timeFormatter)
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (reliability.silentlyDropped) {
+        NoticeCard(
+            text = stringResource(R.string.settings_reliability_not_armed_support),
+            emphasis = NoticeEmphasis.WARNING
+        )
+    }
+
+    var testMessage by remember { mutableStateOf<String?>(null) }
+    val armedTemplate = stringResource(R.string.settings_reliability_test_armed)
+    val failedMessage = stringResource(R.string.settings_reliability_test_failed)
+
+    FilledTonalButton(
+        onClick = {
+            viewModel.onTestAlarm { millis ->
+                testMessage = if (millis == null) {
+                    failedMessage
+                } else {
+                    String.format(
+                        armedTemplate,
+                        Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .format(timeFormatter)
+                    )
+                }
+            }
+        }
+    ) {
+        Text(stringResource(R.string.settings_reliability_test))
+    }
+    testMessage?.let { NoticeCard(text = it) }
 
     // No API exposes the manufacturer auto-start switches, so the honest move is
     // to say what to look for rather than pretend NESA can check it.

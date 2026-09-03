@@ -103,6 +103,40 @@ class AlarmScheduler @Inject constructor(
         alarmManager?.cancel(firePendingIntent(alarmId))
     }
 
+    /**
+     * Whether the platform is still holding an alarm for [alarmId].
+     *
+     * `FLAG_NO_CREATE` returns null when no matching PendingIntent exists, and a
+     * PendingIntent held by AlarmManager stays alive for as long as the alarm
+     * does. So this answers the question neither logs nor guesswork can: has the
+     * alarm been armed, and is it *still* armed now?
+     *
+     * That distinction is what separates a scheduling bug from a device that
+     * cancelled the alarm afterwards — several manufacturers drop every alarm an
+     * app owns when the app is swiped out of the recents list.
+     */
+    fun isArmed(alarmId: String): Boolean {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_FIRE
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            alarmId.hashCode(),
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        ) != null
+    }
+
+    /**
+     * The next alarm clock the system knows about, from any application.
+     *
+     * Not conclusive on its own — another alarm app could own it — but when it
+     * matches the time NESA just set, the alarm reached the platform.
+     */
+    fun nextSystemAlarmClockMillis(): Long? =
+        alarmManager?.nextAlarmClock?.triggerTime
+
     private fun firePendingIntent(alarmId: String): PendingIntent {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             action = AlarmReceiver.ACTION_FIRE

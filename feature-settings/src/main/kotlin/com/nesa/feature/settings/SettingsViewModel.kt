@@ -48,7 +48,13 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val notificationsAllowed = MutableStateFlow(notifier.enabled)
-    private val reliabilityStatus = MutableStateFlow(reliability.status())
+    private val reliabilityStatus = MutableStateFlow(
+        ReliabilityStatus(
+            exactAlarmsAllowed = true,
+            ignoringBatteryOptimisations = true,
+            notificationsAllowed = true
+        )
+    )
 
     val state: StateFlow<SettingsUiState> =
         combine(settings.settings, notificationsAllowed, reliabilityStatus) { preferences, allowed, status ->
@@ -70,7 +76,22 @@ class SettingsViewModel @Inject constructor(
      */
     fun refreshPermissions() {
         notificationsAllowed.value = notifier.enabled
-        reliabilityStatus.value = reliability.status()
+        viewModelScope.launch { reliabilityStatus.value = reliability.status() }
+    }
+
+    /**
+     * Arms the real alarm a minute from now.
+     *
+     * The user then locks the phone and waits. If it rings, the whole path
+     * works; if it does not, the armed/not-armed line above says which half
+     * failed. That is a question no amount of reading the code can settle.
+     */
+    fun onTestAlarm(onArmed: (Long?) -> Unit) {
+        viewModelScope.launch {
+            val at = reliability.runAlarmTest()
+            reliabilityStatus.value = reliability.status()
+            onArmed(at)
+        }
     }
 
     fun batteryOptimisationRequest(): Intent = reliability.batteryOptimisationRequest()

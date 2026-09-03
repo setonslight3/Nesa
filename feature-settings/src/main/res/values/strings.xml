@@ -39,6 +39,13 @@
     <string name="settings_reliability_fix">Fix</string>
     <string name="settings_reliability_manufacturer">Some phones — Oppo, Realme, OnePlus, Xiaomi, Huawei and others — add their own "Auto-start" or "Auto-launch" setting that no app can detect or request. If the alarm still does not ring, open NESA in system settings and turn on auto-start, then set battery usage to "Don't optimise" or "Allow background activity".</string>
     <string name="settings_reliability_open_app_settings">Open NESA in system settings</string>
+    <string name="settings_reliability_armed">Alarm is armed in the system</string>
+    <string name="settings_reliability_not_armed">The system is NOT holding an alarm for NESA</string>
+    <string name="settings_reliability_not_armed_support">Every permission is granted, so the alarm was accepted and then dropped. On Oppo, Realme and OnePlus this happens when the app is swiped out of recent apps. Open recent apps, find NESA, and lock it (the padlock on the app card) so the system stops killing it.</string>
+    <string name="settings_reliability_next_system">Next system alarm: %1$s</string>
+    <string name="settings_reliability_test">Test the alarm in 60 seconds</string>
+    <string name="settings_reliability_test_armed">Armed for %1$s. Lock the phone and wait.</string>
+    <string name="settings_reliability_test_failed">Could not arm a test alarm. Set an alarm time first.</string>
 
     <string name="settings_about_title">About</string>
     <string name="settings_about_body">NESA Stage 1. Your plan, alarms and history live on this device. Nothing is sent anywhere.</string>

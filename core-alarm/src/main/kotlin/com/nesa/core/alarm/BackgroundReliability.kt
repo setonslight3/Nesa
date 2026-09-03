@@ -24,25 +24,46 @@ import javax.inject.Singleton
 data class ReliabilityStatus(
     val exactAlarmsAllowed: Boolean,
     val ignoringBatteryOptimisations: Boolean,
-    val notificationsAllowed: Boolean
+    val notificationsAllowed: Boolean,
+    /** Whether the platform is still holding NESA's alarm right now. */
+    val alarmArmed: Boolean = false,
+    /** The next alarm clock the system knows about, from any app. */
+    val nextSystemAlarmMillis: Long? = null
 ) {
-    /** True when nothing is standing in the way of a dependable alarm. */
+    /** True when no permission is standing in the way of a dependable alarm. */
     val isFullyReliable: Boolean
         get() = exactAlarmsAllowed && ignoringBatteryOptimisations && notificationsAllowed
+
+    /**
+     * Every permission is granted but the platform is not holding the alarm.
+     *
+     * This is the signature of a device that accepted the alarm and then threw
+     * it away — usually because the app was swiped out of recents on a skin that
+     * treats that as a force stop.
+     */
+    val silentlyDropped: Boolean
+        get() = isFullyReliable && !alarmArmed
 }
 
 @Singleton
 class BackgroundReliability @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exactAlarms: ExactAlarmCapability,
-    private val notifier: NesaNotifier
+    private val notifier: NesaNotifier,
+    private val coordinator: NesaAlarmCoordinator
 ) {
 
-    fun status(): ReliabilityStatus = ReliabilityStatus(
+    suspend fun status(): ReliabilityStatus = ReliabilityStatus(
         exactAlarmsAllowed = exactAlarms.isExact,
         ignoringBatteryOptimisations = isIgnoringBatteryOptimisations(),
-        notificationsAllowed = notifier.enabled
+        notificationsAllowed = notifier.enabled,
+        alarmArmed = coordinator.isPrimaryAlarmArmed(),
+        nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis()
     )
+
+    /** Arms the real alarm a minute out, through the real path. */
+    suspend fun runAlarmTest(): Long? =
+        coordinator.armTestAlarm()?.toInstant()?.toEpochMilli()
 
     /**
      * True when Android has been told to leave NESA alone in the background.

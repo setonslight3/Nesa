@@ -7,6 +7,21 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — alarm arming diagnostic
+
+Device report: every permission in the reliability screen reads Granted, and the
+alarm still does not fire until the app is opened. That rules permissions out,
+so this build adds the measurement that distinguishes the two remaining causes:
+
+- `AlarmScheduler.isArmed` asks the platform, via `FLAG_NO_CREATE`, whether it is
+  still holding NESA's alarm. Armed but not ringing, versus never armed at all,
+  are completely different bugs and nothing in the logs told them apart.
+- A "Test the alarm in 60 seconds" button runs the real scheduling and ringing
+  path on demand.
+- The app now arms reminders on launch, not only alarms.
+
+Nothing here changes scheduling behaviour; it is instrumentation.
+
 ## 2026-09-03 — ff390cc — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).

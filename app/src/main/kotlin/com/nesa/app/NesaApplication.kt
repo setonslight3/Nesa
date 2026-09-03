@@ -5,12 +5,14 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.nesa.core.alarm.DayPlanWorker
 import com.nesa.core.alarm.NesaAlarmCoordinator
+import com.nesa.core.alarm.ReminderScheduler
 import com.nesa.core.notifications.NesaChannels
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
@@ -27,6 +29,7 @@ class NesaApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var alarmCoordinator: NesaAlarmCoordinator
+    @Inject lateinit var reminders: ReminderScheduler
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -41,6 +44,9 @@ class NesaApplication : Application(), Configuration.Provider {
 
         startupScope.launch {
             runCatching { alarmCoordinator.rearmAll() }
+            // Reminders too: re-deriving only the alarms left today's reminders
+            // waiting on the half-hourly worker after every cold start.
+            runCatching { reminders.scheduleFor(LocalDate.now()) }
             DayPlanWorker.enqueuePeriodic(this@NesaApplication)
         }
     }
