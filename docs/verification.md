@@ -5,21 +5,49 @@ has been verified*, and *report exact failures*. This document is that report.
 
 ## The short version
 
+**The whole project compiles.** A debug APK has been built and installed on a
+device, and the application launches.
+
 The deterministic core — the scheduler, the state machine, the recovery loop, the
-alarm arithmetic, the wake challenges — **compiles and passes 92 unit tests.**
+alarm arithmetic, the wake challenges — **passes 92 unit tests.**
 
-The Android layers — Room, DataStore, notifications, the alarm platform, and
-every screen — **have not been compiled.** They were written and reviewed but not
-built, because the environment they were written in could not reach the Android
-SDK.
-
-Read the next two sections before treating anything here as working software.
+What remains unverified is *runtime behaviour*: that the alarm actually rings,
+that reminders arrive, that state survives a restart. Compiling is not working.
+The checklist at the end of this document says which items are which.
 
 ## What was verified, and how
 
-The environment this was built in has no Android SDK: `dl.google.com` is blocked
-by network policy, which is where both the SDK and every AndroidX artifact come
-from. Maven Central and the Gradle plugin portal are reachable.
+### The build (verified on a separate machine)
+
+The environment the code was written in has no Android SDK: `dl.google.com` is
+blocked by network policy. The project was therefore built elsewhere, and the
+result committed back.
+
+Three changes were needed to compile, which are now in the history:
+
+| Change | Why |
+| --- | --- |
+| `abiFilters` gained `x86`, `x86_64` | So the APK installs on an emulator. NESA has no native code, so this affects nothing at runtime. |
+| `setBypassDnd(true)` removed from the alarm channel | It only ever took effect with Notification Policy Access, which NESA does not request — it was a no-op promising something the app had not earned. Do Not Disturb resistance comes from the ringer's `USAGE_ALARM` audio attributes instead, which are unchanged. |
+| `org.gradle.tooling.parallel=true` | Build-tool setting only. |
+
+Two things follow from that build succeeding, and both are real verification:
+
+- **`core-storage` compiles, and its SQL is correct.** Room validates every
+  `@Query` against the schema at compile time, so a successful build means every
+  query in `Daos.kt` is valid. The generated schema is committed at
+  `core-storage/schemas/.../1.json`: six tables, the cascade from
+  `schedule_blocks` to `activities`, and the indices on `activityId` and `date`,
+  all exactly as designed.
+- **The Hilt graph is complete.** Hilt fails the build on a missing binding, so
+  the receivers, services, workers and view models all resolve their
+  dependencies — including the ports `:app` supplies for `AlarmScreenLauncher`
+  and `OnboardingAlarmSetup`.
+
+### The domain (verified continuously)
+
+Maven Central and the Gradle plugin portal are reachable from the authoring
+environment, so the domain tests run there on every change.
 
 `core-model` and `core-scheduling` carry no Android dependency — that is a
 deliberate architectural property, and it is what made verification possible at
@@ -81,19 +109,18 @@ worthwhile class of mistake without a compiler:
 
 ## What was not verified
 
-**Nothing below has been compiled.** Treat all of it as a careful first draft.
+Compiling proves the code is well-formed. It proves nothing about behaviour.
 
-| Area | Risk |
+| Area | Still unproven |
 | --- | --- |
-| `core-storage` | Room's annotation processor has not run. Entities, DAO queries and the generated schema are unchecked. |
-| `core-settings` | DataStore API usage is unchecked. |
-| `core-notifications`, `core-alarm` | Android API usage, manifest merging and Hilt graph construction are unchecked. |
-| All `feature-*` and `:app` | Compose API usage, view models, navigation and the Hilt graph are unchecked. |
-| Dependency versions | Chosen from knowledge, not resolved. AGP 8.7.3 / Gradle 8.11.1 / Kotlin 2.0.21 / KSP 2.0.21-1.0.28 / Hilt 2.52 / Compose BOM 2024.10.01 is a combination believed compatible, but the resolution has not been performed. |
-| Runtime behaviour | Nothing has run on a device or emulator. |
+| The alarm | That it fires at the right minute, takes over a locked screen, survives a reboot, and retries when unanswered. The highest-risk area in the project. |
+| Notifications | That reminders are delivered, and that their actions apply the right decision. |
+| Persistence | That the timeline, alarm and settings genuinely survive a restart. |
+| The scheduler on real data | The rules are tested exhaustively in isolation; they have not been watched working against a real day. |
+| Compose screens | They compile and the app launches. Individual screens have not been walked through. |
 
-Expect a first build to surface import and API-signature errors. The domain
-logic underneath is the part that has been tested.
+There are no instrumented tests yet. `core-storage` already declares
+`room-testing` for that purpose.
 
 ## Stage 1 checklist
 
@@ -102,32 +129,54 @@ exists and was reviewed; "verified" means it was executed.
 
 | # | Item | Status |
 | --- | --- | --- |
-| 1 | Fresh install launches successfully | **Not verified** — never run |
-| 2 | Onboarding completes without configuring optional modules | Implemented. Three steps, all skippable, all defaulted. Not run. |
-| 3 | User can add an activity | Implemented in `ActivityEditorScreen`. Not run. |
-| 4 | Activity can be fixed/flexible with a priority | Implemented; the five flexibilities and four priorities are in the editor with plain-language help. Not run. |
+| 1 | Fresh install launches successfully | **Verified.** Debug APK built, installed, and launched on a device. |
+| 2 | Onboarding completes without configuring optional modules | Compiles. Three steps, all skippable, all defaulted. Not walked through. |
+| 3 | User can add an activity | Compiles. Not walked through. |
+| 4 | Activity can be fixed/flexible with a priority | Compiles; five flexibilities and four priorities are in the editor with plain-language help. Not walked through. |
 | 5 | Scheduler moves a flexible activity without moving a fixed anchor | **Verified.** Four dedicated tests, including a critical flexible activity losing to an anchor. |
 | 6 | Missed and skipped behave differently | **Verified.** Separate states, separate causes, separate history; a test asserts no screen can ever raise `MISS`. |
-| 7 | Timeline survives app restart | Implemented — the UI renders only from Room, and there is no in-memory cache. The persistence itself is unverified. |
-| 8 | Alarm configuration persists | Implemented. `NesaAlarmCoordinator` persists before arming, deliberately, so a crash between the two is recoverable. Room path unverified. |
-| 9 | Wake challenge works offline | **Partly verified.** Generation and difficulty adaptation are tested and involve no network or arithmetic. The four Compose screens are unverified. |
-| 10 | Notifications work under supported permissions | Implemented, with permission checks, a `SecurityException` path, and a degraded mode the settings screen explains. Not run. |
-| 11 | Light/dark/system theme behaviour | Implemented; one palette, two variants, same information architecture. Not run. |
+| 7 | Timeline survives app restart | Storage layer **verified to compile** with the intended schema; the UI renders only from Room and holds no cache. The restart itself has not been observed. |
+| 8 | Alarm configuration persists | Same: schema verified, `NesaAlarmCoordinator` persists before arming by design. Not observed. |
+| 9 | Wake challenge works offline | **Partly verified.** Generation and difficulty adaptation are tested and involve no network or arithmetic. The four screens compile but have not been played. |
+| 10 | Notifications work under supported permissions | Compiles, with permission checks, a `SecurityException` path, and a degraded mode the settings screen explains. Not observed. |
+| 11 | Light/dark/system theme behaviour | Compiles. Not observed. |
 | 12 | Tests pass | **Verified.** 92 domain tests, 0 failures. |
 
-**Stage 1 has not passed its gate.** Items 1, 3, 7, 8, 10 and 11 need a build and
-a device. The honest summary is that the thinking and the deterministic core are
-done and tested; the Android shell around them is written but unproven.
+**Stage 1 has not fully passed its gate.** Four items — 1, 5, 6, 12 — are
+verified. The rest compile and are structurally sound, but have not been watched
+working on a device.
 
-## What to do next
+## The gate: five checks
 
-1. Open the project in Android Studio and run `./gradlew assembleDebug`. Fix the
-   compile errors; expect them in the Compose screens first.
-2. Run `./gradlew test` — the 92 domain tests should still pass, and they are the
-   regression net while the rest is fixed.
-3. Work down the checklist on a device, starting with the alarm, which is the
-   feature with the most platform risk and the least tolerance for failure.
-4. Add instrumented tests for the Room layer; `core-storage` already declares
-   `room-testing` for exactly this.
+These are the observations that would close the remaining items. They take
+roughly ten minutes on a real phone.
 
-Only then is Stage 1 complete, and only then should Stage 2 begin.
+1. **Alarm.** Set one two minutes out, lock the screen, and wait. It should take
+   over the lock screen; the challenge should stop it and nothing else should.
+   *Closes 9, and the riskiest part of 8.*
+2. **Alarm across a reboot.** Set one ten minutes out, restart the phone, and
+   leave it. It should still fire. *This is the one most likely to fail on a
+   manufacturer skin, and the one that matters most.*
+3. **Anchor protection on real data.** Add a fixed 09:00–11:00 commitment and a
+   flexible activity at 09:30. The flexible one should land at 11:00 with an
+   explanation naming the anchor. *Closes 3 and 4, and confirms the tested engine
+   behaves the same through the UI.*
+4. **Restart.** Force-stop and reopen. Timeline, alarm and settings unchanged.
+   *Closes 7 and 8.*
+5. **Reminder.** Leave an activity due and wait for the notification; tap
+   "Do later" and check the timeline agrees. *Closes 10.*
+
+Switching the theme in settings covers 11 in passing.
+
+## Known follow-ups
+
+- **The debug APK is committed to the repository** at `apk/NESA-debug.apk`
+  (19 MB). Git keeps every version of it forever, so each rebuild that gets
+  committed adds another 19 MB to every future clone. A GitHub Release, or a CI
+  artifact, delivers the same file to a phone without that cost.
+- **No instrumented tests yet.** `core-storage` already declares `room-testing`;
+  the migration path and the DAO round-trips are the first things worth covering
+  there.
+- **Do Not Disturb.** Worth one deliberate check that the alarm still sounds with
+  DND on. It should, via `USAGE_ALARM`, but it is the kind of thing to confirm
+  rather than assume.
