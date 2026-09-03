@@ -44,7 +44,6 @@ object NesaChannels {
                 // notification itself stays silent to avoid a double alert.
                 setSound(null, null)
                 enableVibration(false)
-                setBypassDnd(true)
             }
         )
 

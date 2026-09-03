@@ -24,7 +24,7 @@ android {
         // door open for a dependency that does, and documents what must keep
         // working: 32-bit and 64-bit ARM.
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
     }
 
