@@ -7,15 +7,35 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — audio guard fix, and an on-device alarm trace
+
+Device report: with keep-alive on, the alarm still did not ring. It produced a
+notification and the challenge screen, never a sound. And the decisive new fact:
+**staying inside the app did not fire it either** — it only fired after leaving
+the app and coming back. That rules out background freezing as the whole story.
+
+One definite bug fixed: `AlarmAudioPlayer` set `isPlaying = true` before creating
+a player, and never cleared it when every sound source failed. Once the ringer
+service tried and failed, the ringing screen's attempt — the one with no
+background restrictions, the one that would have worked — returned immediately.
+The flag now tracks a player that genuinely exists.
+
+The timing behaviour is not yet explained, and three rounds of reasoning from
+symptoms have not settled it. So this build records what the alarm actually does
+— armed, receiver fired, service started or refused, audio playing or not, screen
+opened, outcome — and shows it in the reliability screen under "What the alarm
+actually did". No adb required.
+
 ## 2026-09-03 — 68bb079 — SUCCESS
 
-Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
-Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+`./gradlew assembleDebug` and `./gradlew test` both pass, 92/92 domain tests.
+APK published to GitHub Release `v0.1.0-stage1`.
 
-Delivers:
-- Audio moved to `AlarmAudioPlayer` (drivable directly from foreground activity).
-- `NesaKeepAliveService` foreground service for aggressive background task killer ROMs (e.g. Infinix / Transsion).
-- Unanswered timeout import fixes.
+Delivered: audio moved into `AlarmAudioPlayer` so the ringing screen can drive
+it, the optional `NesaKeepAliveService` for ROMs that freeze background apps,
+and the restored imports from the failure below.
+
+## 2026-09-03 — e706b41 — FAILED, fixed in the commit that follows
 
 
 ```

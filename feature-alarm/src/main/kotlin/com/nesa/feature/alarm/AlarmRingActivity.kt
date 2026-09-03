@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.nesa.core.alarm.AlarmAudioPlayer
+import com.nesa.core.alarm.AlarmEventLog
 import com.nesa.core.alarm.AlarmReceiver
 import com.nesa.core.alarm.AlarmRingerService
 import com.nesa.core.model.NesaSettings
@@ -47,6 +48,7 @@ class AlarmRingActivity : ComponentActivity() {
      * start, so when the service did run this changes nothing.
      */
     @Inject lateinit var audio: AlarmAudioPlayer
+    @Inject lateinit var events: AlarmEventLog
 
     private val preferences = MutableStateFlow(NesaSettings.Default)
 
@@ -59,6 +61,7 @@ class AlarmRingActivity : ComponentActivity() {
             finish()
             return
         }
+        events.record("ring screen opened")
 
         // The theme is read asynchronously so a slow first disk read can never
         // delay the alarm appearing; it starts on the default and settles.

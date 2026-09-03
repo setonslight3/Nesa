@@ -22,6 +22,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
     @Inject lateinit var notifier: NesaNotifier
     @Inject lateinit var screenLauncher: AlarmScreenLauncher
+    @Inject lateinit var events: AlarmEventLog
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_FIRE) return
@@ -32,8 +33,11 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra(EXTRA_ALARM_ID, alarmId)
         }
 
+        events.record("receiver fired — alarm is due")
+
         try {
             ContextCompat.startForegroundService(context, service)
+            events.record("ringer service start requested")
         } catch (refused: IllegalStateException) {
             // Android 12+ forbids starting a foreground service from a
             // background broadcast unless the alarm was an exact one. When NESA
@@ -41,6 +45,7 @@ class AlarmReceiver : BroadcastReceiver() {
             // full-screen notification is always allowed, so the alarm still
             // reaches the user even though nothing can play a sound for it.
             Log.w(TAG, "Foreground start refused; falling back to a notification", refused)
+            events.record("service REFUSED by platform — notification only, no sound")
             notifier.postRinger(null, fullScreenIntent(context, alarmId))
         }
     }

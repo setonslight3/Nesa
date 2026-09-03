@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nesa.core.model.GuidancePersonality
@@ -374,6 +375,38 @@ private fun ReliabilitySection(
     }
     testMessage?.let { NoticeCard(text = it) }
 
+    // The alarm's own trace. Whichever step is missing is the bug, and reading
+    // it needs no adb, no cable and no laptop.
+    SectionHeader(
+        title = stringResource(R.string.settings_reliability_events),
+        trailing = null
+    )
+    if (state.alarmEvents.isEmpty()) {
+        Text(
+            text = stringResource(R.string.settings_reliability_events_empty),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        // No inner scroll: the settings screen already scrolls vertically, and
+        // nesting two scrollables in the same direction is both a Compose hazard
+        // and unpleasant to use. Showing the tail is enough — the last alarm is
+        // the one being diagnosed.
+        Column(Modifier.fillMaxWidth()) {
+            state.alarmEvents.takeLast(MAX_VISIBLE_EVENTS).forEach { line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        TextButton(onClick = viewModel::onClearAlarmEvents) {
+            Text(stringResource(R.string.settings_reliability_events_clear))
+        }
+    }
+
     // No API exposes the manufacturer auto-start switches, so the honest move is
     // to say what to look for rather than pretend NESA can check it.
     NoticeCard(text = stringResource(R.string.settings_reliability_manufacturer))
@@ -418,6 +451,9 @@ private fun PermissionRow(
         }
     }
 }
+
+/** Enough to see a whole alarm from arming to outcome, without burying the screen. */
+private const val MAX_VISIBLE_EVENTS = 25
 
 @Composable
 private fun NavigationRow(title: String, onClick: () -> Unit) {

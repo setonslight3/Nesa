@@ -43,7 +43,8 @@ import kotlin.math.pow
  */
 @Singleton
 class AlarmAudioPlayer @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val events: AlarmEventLog
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -62,8 +63,12 @@ class AlarmAudioPlayer @Inject constructor(
      */
     @Synchronized
     fun start(alarm: Alarm) {
-        if (isPlaying) return
-        isPlaying = true
+        // Guard on a player that genuinely exists, not on an intent to make one.
+        // Setting the flag up front meant that when the service tried first and
+        // every sound source failed, the flag stayed true with no player behind
+        // it — and the ringing screen's attempt, the one that would have worked,
+        // returned immediately. The alarm was then silent for good.
+        if (player != null) return
 
         // Walk the candidates in turn. A phone with no alarm sound configured
         // must not end up with a silent alarm.
@@ -101,8 +106,13 @@ class AlarmAudioPlayer @Inject constructor(
             }
         }
 
+        isPlaying = player != null
         if (player == null) {
+            // Left false on purpose, so whoever tries next is allowed to.
             Log.w(TAG, "No alarm sound could be played; vibration only")
+            events.record("audio: no source could be played")
+        } else {
+            events.record("audio: playing")
         }
         if (alarm.vibrate) startVibration()
     }

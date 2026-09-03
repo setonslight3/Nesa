@@ -42,6 +42,7 @@ class AlarmRingerService : Service() {
     @Inject lateinit var notifier: NesaNotifier
     @Inject lateinit var screenLauncher: AlarmScreenLauncher
     @Inject lateinit var audio: AlarmAudioPlayer
+    @Inject lateinit var events: AlarmEventLog
 
     // Main-thread scope: the notification and the audio player are main-thread
     // affine, and the repository calls suspend onto their own dispatchers anyway.
@@ -93,12 +94,14 @@ class AlarmRingerService : Service() {
             NesaNotifier.RINGER_NOTIFICATION_ID,
             notifier.buildRingerNotification(null, alarmId?.let(::fullScreenIntent))
         )
+        events.record("ringer became a foreground service")
         true
     } catch (refused: IllegalStateException) {
         // Android 12+ throws ForegroundServiceStartNotAllowedException, a
         // subclass of IllegalStateException, when a background start is not
         // exempt. Caught by supertype so this compiles and runs on API 26 too.
         Log.w(TAG, "The platform refused to start the alarm in the foreground", refused)
+        events.record("ringer REFUSED foreground — stopping")
         false
     }
 
@@ -145,6 +148,7 @@ class AlarmRingerService : Service() {
         scope.launch {
             // Rearming must not be skipped because something else threw, or a
             // repeating alarm would silently stop repeating.
+            events.record("alarm ${outcome.name.lowercase()}")
             runCatching {
                 when (outcome) {
                     Outcome.SNOOZED -> coordinator.snooze(alarmId, ZonedDateTime.now())

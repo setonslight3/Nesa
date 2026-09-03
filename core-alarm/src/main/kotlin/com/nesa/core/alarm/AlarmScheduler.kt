@@ -25,7 +25,8 @@ import javax.inject.Singleton
 @Singleton
 class AlarmScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val capability: ExactAlarmCapability
+    private val capability: ExactAlarmCapability,
+    private val events: AlarmEventLog
 ) {
 
     private val alarmManager: AlarmManager?
@@ -60,6 +61,7 @@ class AlarmScheduler @Inject constructor(
         // Ids and times only: enough to diagnose a silent failure from logcat,
         // without writing the user's plan into the system log.
         Log.i(TAG, "Arming ${alarm.id} for $at (exact=${capability.isExact})")
+        events.record("armed for ${at.toLocalTime()} (exact=${capability.isExact})")
 
         if (capability.isExact) {
             try {
@@ -95,6 +97,7 @@ class AlarmScheduler @Inject constructor(
             true
         } catch (e: Exception) {
             Log.e(TAG, "All alarm scheduling mechanisms failed for alarm ${alarm.id}", e)
+            events.record("arming FAILED: ${e.javaClass.simpleName}")
             false
         }
     }

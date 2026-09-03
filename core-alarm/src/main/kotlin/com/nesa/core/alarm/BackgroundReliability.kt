@@ -50,8 +50,14 @@ class BackgroundReliability @Inject constructor(
     @ApplicationContext private val context: Context,
     private val exactAlarms: ExactAlarmCapability,
     private val notifier: NesaNotifier,
-    private val coordinator: NesaAlarmCoordinator
+    private val coordinator: NesaAlarmCoordinator,
+    private val events: AlarmEventLog
 ) {
+
+    /** The alarm's own account of what it did, oldest first. */
+    fun recentEvents(): List<String> = events.recent()
+
+    fun clearEvents() = events.clear()
 
     suspend fun status(): ReliabilityStatus = ReliabilityStatus(
         exactAlarmsAllowed = exactAlarms.isExact,

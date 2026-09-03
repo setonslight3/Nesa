@@ -26,6 +26,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val settings: NesaSettings = NesaSettings.Default,
     val notificationsAllowed: Boolean = true,
+    val alarmEvents: List<String> = emptyList(),
     val reliability: ReliabilityStatus = ReliabilityStatus(
         exactAlarmsAllowed = true,
         ignoringBatteryOptimisations = true,
@@ -63,6 +64,7 @@ class SettingsViewModel @Inject constructor(
             SettingsUiState(
                 settings = preferences,
                 notificationsAllowed = allowed,
+                alarmEvents = reliability.recentEvents(),
                 reliability = status
             )
         }.stateIn(
@@ -94,6 +96,11 @@ class SettingsViewModel @Inject constructor(
             reliabilityStatus.value = reliability.status()
             onArmed(at)
         }
+    }
+
+    fun onClearAlarmEvents() {
+        reliability.clearEvents()
+        refreshPermissions()
     }
 
     fun batteryOptimisationRequest(): Intent = reliability.batteryOptimisationRequest()
