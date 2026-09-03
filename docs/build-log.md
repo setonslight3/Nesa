@@ -21,10 +21,16 @@ Also adds the two facts the trace could not previously show — whether the proc
 was killed or merely frozen ("app process started"), and whether the keep-alive
 service is genuinely running rather than merely switched on.
 
-## Pending — the overlay permission, which was never asked for
+## 2026-09-03 — 2f6d8ab — SUCCESS
 
-The volume fix is confirmed working on the device: the alarm rings. Auto-start is
-now enabled and the alarm is still not firing with the app in the background.
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Declared `SYSTEM_ALERT_WINDOW` permission so NESA appears in Settings → Special app access → Display over other apps.
+- Added direct "Fix" button and status tile for overlay permission in the reliability screen.
+- Recorded overlay permission status in the on-device alarm trace.
+
 
 Device screenshots showed why NESA was missing from Settings → Special app access
 → Display over other apps: it never declared `SYSTEM_ALERT_WINDOW`, and an app
