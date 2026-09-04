@@ -7,6 +7,30 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## 2026-09-04 — 6ddd437 — FAILED
+
+`:core-scheduling:test` failed:
+
+```
+PlanStatisticsTest > a streak is a record of doing things, not of opening the app FAILED
+    java.lang.AssertionError: expected:<0> but was:<2>
+    at org.junit.Assert.fail(Assert.java:89)
+    at org.junit.Assert.failNotEquals(Assert.java:835)
+    at org.junit.Assert.assertEquals(Assert.java:120)
+    at org.junit.Assert.assertEquals(Assert.java:146)
+    at com.nesa.core.scheduling.PlanStatisticsTest.a streak is a record of doing things, not of opening the app(PlanStatisticsTest.kt:103)
+```
+
+151 tests completed, 1 failed.
+
+Cause: In `PlanStatistics.streakDays(records, endingOn)`:
+```kotlin
+var cursor = if (endingOn in completedDays) endingOn else endingOn.minusDays(1)
+```
+When `endingOn` (e.g. `monday.plusDays(2)`) contains records that were all `SKIPPED` (no completed items), `endingOn in completedDays` is false, so `cursor` falls back to `endingOn.minusDays(1)` (`monday.plusDays(1)`), which continues counting the preceding completed days (`monday.plusDays(1)` and `monday`), returning a streak of `2` instead of `0`.
+
+---
+
 ## Pending — Stage 2 (Life) complete: schedules, review and statistics screens
 
 - `LifeSchedule` / `ScheduleEntry` / `LifeScheduleApplier` / `LifeSchedulePresets`
