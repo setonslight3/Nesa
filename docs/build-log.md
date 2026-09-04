@@ -7,6 +7,19 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## 2026-09-04 — c532b1c — SUCCESS
+
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 127/127 domain tests across 12 test suites).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers Stage 2:
+- Recurrence module (Schema 2 → 3, `Recurrence`, `RecurrenceMaterialiser`, repeating activities, 14 recurrence tests).
+- Fitness module (Schema 3 → 4, `Exercise`, `WorkoutRoutine`, `RoutineExercise`, `WorkoutSession`, `SetLog`, `WorkoutProgress`, `FitnessDao`, `FitnessScreen`, `NesaSettings.fitnessEnabled`).
+- Fixed cross-module Kotlin smart-cast compilation error in `FitnessScreen.kt:210`.
+- All 127 domain unit tests passing cleanly.
+
+---
+
 ## 2026-09-04 — 9111402 — FAILED
 
 `:feature-fitness:compileDebugKotlin` failed:
