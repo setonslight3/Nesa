@@ -444,6 +444,71 @@ test succeeds. The test is the one below, and the trace decides:
 - No `watch running` line at all — the service never started; the trace will say
   whether the platform refused it.
 
+## Gate run 8 — the watch survives the swipe, and the alarm still runs late
+
+Two tests on the Infinix Smart 9, back to back.
+
+**A — left the app the usual way (Home, task still in Recents):**
+
+```
+12:57:16  armed for 12:58:16.226222 (exact=true)
+12:57:16  watch running (next 12:58)
+12:59:27  receiver fired 70s LATE — the system held it back
+```
+
+Did not ring on its own. Delivery again landed at the moment the app was
+reopened. Unchanged from every run before this one.
+
+**B — swiped NESA out of Recents:**
+
+```
+13:00:24  armed for 13:01:24.259676 (exact=true)
+13:00:24  watch running (next 13:01)
+13:00:28  app swiped from recents — watch still running
+13:01:50  receiver fired 26s LATE — the system held it back
+13:01:50  ringer became a foreground service
+13:01:51  audio: alarm volume 10/15  ·  audio: playing
+13:01:52  alarm screen launched over the foreground  ·  ring screen opened
+13:02:02  alarm dismissed
+13:02:02  armed for 07:00 (exact=true)  ·  watch running (next 07:00)
+```
+
+**This is the first time in the whole investigation that the alarm rang without
+the app being reopened.** It rang, it vibrated, the wake challenge ran, the
+challenge dismissed it, and the next occurrence re-armed with the watch back up
+behind it. Every step after delivery is correct and has been for several builds.
+
+### What is fixed
+
+The watch survives `onTaskRemoved` and keeps the process reachable across the
+swipe. That is what gate run 7 set out to establish, and it holds.
+
+### What is not fixed, and must not be recorded as fixed
+
+- **Test B was still 26 seconds late.** For a 07:00 alarm that is 07:00:26. It
+  rang unattended, which is the thing that matters most, but "late by half a
+  minute" is not what an alarm clock promises.
+- **Test A is still the original failure, in full.** 70 seconds, and no ring
+  until the app came back. Pressing Home is the ordinary way to leave an app;
+  it cannot be the case that NESA only works if the user swipes it away.
+
+### The inversion, which is the useful clue
+
+Swiping the app away now produces a **better** result than backgrounding it —
+26 seconds against 70. That is backwards for a cached-app freezer, which should
+punish the removed task at least as hard. A process holding a foreground service
+with no task behaves differently on this ROM from the same process with a
+backgrounded task, which points away from the freezer alone and towards the
+delivery path itself.
+
+The next hypothesis to test: Transsion's auto-start/background policy gates
+**manifest-declared broadcast receivers** independently of whether the process is
+running. NESA's alarm PendingIntent names `AlarmReceiver` as an explicit
+component, so every delivery goes through that gate. A receiver registered at
+runtime by the live watch service is not a manifest component and is not subject
+to it. That is a concrete, testable change and it is where this goes next if the
+remaining lateness is to be closed.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
