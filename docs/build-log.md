@@ -7,9 +7,17 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — Stage 2: the fitness module
+## 2026-09-04 — 9111402 — FAILED
 
-A new `:feature-fitness` module (added to `settings.gradle.kts` and `:app`).
+`:feature-fitness:compileDebugKotlin` failed:
+
+```
+> Task :feature-fitness:compileDebugKotlin FAILED
+e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/feature-fitness/src/main/kotlin/com/nesa/feature/fitness/FitnessScreen.kt:210:68 Smart cast to 'kotlin.Any' is impossible, because 'daysSinceLast' is a public API property declared in different module.
+```
+
+Cause: In `FitnessScreen.kt:210:68`, string resource formatting `stringResource(R.string.fitness_days_ago, progress.daysSinceLast)` or smart-cast check on `progress.daysSinceLast` (nullable Int declared in `:core-scheduling` module) cannot be smart-cast directly across module boundaries without assigning to a local val.
+
 Domain-first as usual, and **schema 3 → 4** with five new tables.
 
 - `core-model/Fitness.kt` — `Exercise`, `WorkoutRoutine`/`RoutineExercise` (the
