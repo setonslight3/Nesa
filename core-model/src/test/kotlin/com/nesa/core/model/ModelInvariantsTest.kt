@@ -74,6 +74,25 @@ class ModelInvariantsTest {
     }
 
     @Test
+    fun `an alarm defaults to a volume that can wake somebody`() {
+        val alarm = Alarm(id = "a", time = LocalTime.of(7, 0))
+        assertEquals(Alarm.DEFAULT_VOLUME_PERCENT, alarm.volumePercent)
+        assertTrue(alarm.volumePercent >= Alarm.MIN_VOLUME_PERCENT)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `an alarm cannot be silenced by its volume`() {
+        // Zero is the value a slider can reach by accident and a user never
+        // means. A silent alarm is a broken alarm, not a quiet preference.
+        Alarm(id = "a", time = LocalTime.of(7, 0), volumePercent = 0)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `an alarm volume cannot exceed the scale`() {
+        Alarm(id = "a", time = LocalTime.of(7, 0), volumePercent = 101)
+    }
+
+    @Test
     fun `settings work with no configuration at all`() {
         val defaults = NesaSettings.Default
         assertFalse(defaults.onboardingCompleted)

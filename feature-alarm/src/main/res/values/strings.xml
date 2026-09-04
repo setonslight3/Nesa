@@ -4,6 +4,14 @@
     <string name="alarm_time">Ring at</string>
     <string name="alarm_repeat">Repeat on</string>
     <string name="alarm_repeat_none">Once, at the next occurrence</string>
+    <string name="alarm_sound_section">Sound</string>
+    <string name="alarm_sound_current">Ringtone: %1$s</string>
+    <string name="alarm_sound_choose">Choose a ringtone</string>
+    <string name="alarm_sound_picker_title">Alarm sound</string>
+    <string name="alarm_sound_default">the phone’s default</string>
+    <string name="alarm_volume">Volume</string>
+    <string name="alarm_volume_value">%1$d%%</string>
+    <string name="alarm_volume_support">NESA sets the phone’s alarm volume to this while the alarm rings, then puts it back afterwards.</string>
     <string name="alarm_vibrate">Vibrate</string>
     <string name="alarm_fade_in">Fade the sound in</string>
     <string name="alarm_fade_in_value">%1$d seconds</string>

@@ -141,7 +141,11 @@ fun AlarmEntity.toDomain(): Alarm = Alarm(
     ),
     vibrate = vibrate,
     soundUri = soundUri,
-    fadeInSeconds = fadeInSeconds
+    fadeInSeconds = fadeInSeconds,
+    // Coerced rather than trusted: Alarm's constructor rejects an out-of-range
+    // volume, and a stored row from a future or hand-edited database must not be
+    // able to throw on the way in and take the alarm list with it.
+    volumePercent = volumePercent.coerceIn(Alarm.MIN_VOLUME_PERCENT, 100)
 )
 
 fun Alarm.toEntity(): AlarmEntity = AlarmEntity(
@@ -161,7 +165,8 @@ fun Alarm.toEntity(): AlarmEntity = AlarmEntity(
     allowReturnToSleep = snooze.allowReturnToSleep,
     vibrate = vibrate,
     soundUri = soundUri,
-    fadeInSeconds = fadeInSeconds
+    fadeInSeconds = fadeInSeconds,
+    volumePercent = volumePercent
 )
 
 // --- History ----------------------------------------------------------------

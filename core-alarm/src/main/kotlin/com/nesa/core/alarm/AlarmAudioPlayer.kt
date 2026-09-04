@@ -56,6 +56,9 @@ class AlarmAudioPlayer @Inject constructor(
     var isPlaying: Boolean = false
         private set
 
+    /** The device's own alarm volume, held while NESA is overriding it. */
+    private var restoreTo: Int? = null
+
     /**
      * Starts ringing, unless something already is.
      *
@@ -108,7 +111,7 @@ class AlarmAudioPlayer @Inject constructor(
         }
 
         isPlaying = player != null
-        events.record("audio: alarm volume ${describeAlarmVolume()}")
+        events.record("audio: alarm volume ${applyAlarmVolume(alarm.volumePercent)}")
         if (player == null) {
             // Left false on purpose, so whoever tries next is allowed to.
             Log.w(TAG, "No alarm sound could be played; vibration only")
@@ -120,36 +123,59 @@ class AlarmAudioPlayer @Inject constructor(
     }
 
     /**
-     * Makes sure the alarm stream can actually be heard, and says what it found.
+     * Sets the alarm stream to the level this alarm asked for, and says what it did.
      *
-     * `MediaPlayer.setVolume` is a multiplier on top of the system's alarm
-     * stream, so a stream sitting at zero produces silence no matter what the
-     * player does — and the trace would still read "playing". An alarm at zero
-     * volume is not an alarm, so NESA raises it, but only from silence and only
-     * to a moderate level: quietly overriding a volume the user chose would be
-     * its own kind of rude.
+     * `MediaPlayer.setVolume` is only a multiplier on top of the system's alarm
+     * stream, so a stream sitting low produces a quiet alarm no matter what the
+     * player does — and the trace would still read "playing". A device was found
+     * at 1/15: not silent, under seven per cent of maximum, and the fade
+     * multiplies that down again. The alarm was correct and inaudible.
+     *
+     * The old behaviour was to raise the stream only when it was already too
+     * quiet, on the reasoning that overriding a level the user chose would be
+     * rude. That was the wrong reading: the alarm stream is global and anything
+     * can have moved it, so "the level the user chose" was not knowable from
+     * here. Now the user chooses it per alarm, on the alarm screen, and this
+     * simply honours that — then [restoreDeviceVolume] puts the device's own
+     * level back when the alarm stops, so NESA is loud for the alarm and not a
+     * minute longer.
      */
-    private fun describeAlarmVolume(): String {
+    private fun applyAlarmVolume(percent: Int): String {
         val audio = context.getSystemService<AudioManager>() ?: return "unknown"
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_ALARM)
         val current = audio.getStreamVolume(AudioManager.STREAM_ALARM)
+        // At least 1: rounding a low percentage on a coarse scale must never
+        // land on zero, which is the one value that is not an alarm at all.
+        val wanted = (max * percent / 100).coerceIn(1, max)
 
-        // Checking for exactly zero was not enough. A device reported 1/15 — not
-        // silent, but under seven per cent of maximum, and the player's own fade
-        // multiplies that down again. The alarm reported itself as playing and
-        // could not be heard. Anything under the threshold is treated as silent,
-        // because an alarm nobody can hear has already failed.
-        if (current >= max * AUDIBLE_FRACTION) return "$current/$max"
+        if (current == wanted) return "$current/$max"
 
-        val raised = (max * RECOVERED_FRACTION).toInt().coerceAtLeast(1)
-        val ok = runCatching {
-            audio.setStreamVolume(AudioManager.STREAM_ALARM, raised, 0)
-        }.isSuccess
-        return if (ok) {
-            "was $current/$max — too quiet to hear, raised to $raised"
-        } else {
-            "$current/$max and could not be raised"
+        val restored = restoreTo
+        return runCatching {
+            audio.setStreamVolume(AudioManager.STREAM_ALARM, wanted, 0)
+            // Only the first change of a ring records what to go back to, so a
+            // snooze that re-enters here cannot overwrite the device's real
+            // level with our own.
+            if (restored == null) restoreTo = current
+            "$wanted/$max (was $current)"
+        }.getOrElse {
+            Log.w(TAG, "Could not set the alarm stream volume", it)
+            "$current/$max and could not be changed"
         }
+    }
+
+    /**
+     * Puts the device's alarm volume back the way it was found.
+     *
+     * Without this, every alarm would permanently rewrite a system-wide setting
+     * the user did not come here to change.
+     */
+    private fun restoreDeviceVolume() {
+        val level = restoreTo ?: return
+        restoreTo = null
+        val audio = context.getSystemService<AudioManager>() ?: return
+        runCatching { audio.setStreamVolume(AudioManager.STREAM_ALARM, level, 0) }
+            .onFailure { Log.w(TAG, "Could not restore the alarm stream volume", it) }
     }
 
     @Synchronized
@@ -162,6 +188,7 @@ class AlarmAudioPlayer @Inject constructor(
         }
         player = null
         stopVibration()
+        restoreDeviceVolume()
         isPlaying = false
     }
 
@@ -203,11 +230,5 @@ class AlarmAudioPlayer @Inject constructor(
         const val FADE_STEPS_PER_SECOND = 4
         /** Where the fade begins. The stream is guaranteed audible by then. */
         const val START_VOLUME = 0.35f
-
-        /** Below this share of maximum, an alarm is not going to wake anybody. */
-        const val AUDIBLE_FRACTION = 0.4f
-
-        /** Loud enough to wake someone, short of the top of the scale. */
-        const val RECOVERED_FRACTION = 0.7f
     }
 }

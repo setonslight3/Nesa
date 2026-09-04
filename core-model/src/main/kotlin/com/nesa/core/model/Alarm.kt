@@ -112,9 +112,37 @@ data class Alarm(
     /** System URI of the alarm sound, or null for the device default. */
     val soundUri: String? = null,
     /** Seconds over which the volume ramps up, so waking is not a jolt. */
-    val fadeInSeconds: Int = 20
+    val fadeInSeconds: Int = 20,
+    /**
+     * How loud this alarm rings, as a share of the device's alarm stream.
+     *
+     * The device's own alarm volume is a single global setting that anything
+     * can have moved — and a phone found sitting at 1/15 is what made a
+     * correctly playing alarm inaudible. Owning the level per alarm means the
+     * user sets it once, here, and it holds. The previous system volume is put
+     * back when the alarm stops; NESA is loud for the alarm, not afterwards.
+     *
+     * The floor is deliberately not zero. A silent alarm is not a quiet
+     * preference, it is a broken alarm, and the slider should not be able to
+     * produce one by accident.
+     */
+    val volumePercent: Int = DEFAULT_VOLUME_PERCENT
 ) {
+    init {
+        require(volumePercent in MIN_VOLUME_PERCENT..100) {
+            "Alarm volume must be between $MIN_VOLUME_PERCENT and 100 percent"
+        }
+    }
+
     val repeats: Boolean get() = days.isNotEmpty()
+
+    companion object {
+        /** Loud enough to wake someone, short of the top of the scale. */
+        const val DEFAULT_VOLUME_PERCENT: Int = 80
+
+        /** Below this an alarm stops being an alarm. */
+        const val MIN_VOLUME_PERCENT: Int = 10
+    }
 }
 
 /** The live state of one alarm firing. Persisted so it survives process death. */

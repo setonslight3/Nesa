@@ -85,7 +85,9 @@ data class AlarmEntity(
     val allowReturnToSleep: Boolean,
     val vibrate: Boolean,
     val soundUri: String?,
-    val fadeInSeconds: Int
+    val fadeInSeconds: Int,
+    /** Added in schema 2. Existing rows default to Alarm.DEFAULT_VOLUME_PERCENT. */
+    val volumePercent: Int
 )
 
 @Entity(

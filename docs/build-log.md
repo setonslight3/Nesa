@@ -7,6 +7,24 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — ringtone picker, per-alarm volume, and a Room migration
+
+- `Alarm.volumePercent` (10–100, default 80) with **schema 1 → 2 migration** in
+  the new `NesaMigrations`. Destructive fallback is off and the test phone has
+  real data, so this migration is mandatory — without it the app will refuse to
+  open the database on update.
+- Ringtone picker on the alarm screen via `RingtoneManager.ACTION_RINGTONE_PICKER`.
+- `AlarmAudioPlayer` now sets the alarm stream to the chosen level and restores
+  the device's own level when the alarm stops.
+- Three new domain tests on the volume bounds — expect 101 domain tests.
+
+Worth watching for at build time: the Room schema export should produce
+`core-storage/schemas/com.nesa.core.storage.NesaDatabase/2.json`. If Room
+complains about a missing migration, that is the thing to report, not to fix.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## 2026-09-04 — d211ff8 — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 98/98 domain tests).

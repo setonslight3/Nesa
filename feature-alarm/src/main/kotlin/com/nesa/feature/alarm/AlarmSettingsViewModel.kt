@@ -74,6 +74,19 @@ class AlarmSettingsViewModel @Inject constructor(
 
     fun onFadeInChanged(seconds: Int) = update { it.copy(fadeInSeconds = seconds.coerceIn(0, 120)) }
 
+    /**
+     * @param uri what the system ringtone picker returned, or null for "Silent",
+     *   which the picker offers and which here means the device's default alarm
+     *   sound rather than no sound at all — a silent alarm is not a thing NESA
+     *   will store. AlarmAudioPlayer falls back through the device defaults when
+     *   this is null.
+     */
+    fun onSoundChanged(uri: String?) = update { it.copy(soundUri = uri) }
+
+    fun onVolumeChanged(percent: Int) = update {
+        it.copy(volumePercent = percent.coerceIn(Alarm.MIN_VOLUME_PERCENT, 100))
+    }
+
     fun onChallengeRequiredChanged(required: Boolean) =
         update { it.copy(challenge = it.challenge.copy(required = required)) }
 

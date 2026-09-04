@@ -509,6 +509,40 @@ runtime by the live watch service is not a manifest component and is not subject
 to it. That is a concrete, testable change and it is where this goes next if the
 remaining lateness is to be closed.
 
+## Ringtone and volume, and what is deliberately left open
+
+Added after gate run 8, at the user's request, and separately from the lateness:
+
+- **A ringtone picker.** `RingtoneManager.ACTION_RINGTONE_PICKER` rather than a
+  list of NESA's own, so the user gets every sound the phone already has, in the
+  screen they know from the clock app. `Alarm.soundUri` already existed and
+  `AlarmAudioPlayer` already honoured it — only the way to set it was missing.
+  The picker's "Silent" entry is suppressed: an alarm that cannot make a sound
+  is not a preference this app stores.
+- **A volume slider, 10–100%.** `Alarm.volumePercent`, new, with a Room
+  migration (schema 1 → 2, `ALTER TABLE alarms ADD COLUMN volumePercent`) because
+  destructive fallback is off and there is real data on the test phone.
+
+The volume change also replaces a judgement that turned out to be wrong.
+`AlarmAudioPlayer` used to raise the device's alarm stream only when it found it
+below 40% of maximum, reasoning that overriding a level the user had chosen would
+be rude. But the alarm stream is global and anything can move it — the phone was
+found at 1/15 — so "the level the user chose" was never knowable from there. The
+user now chooses it per alarm, this honours it, and the device's own level is put
+back when the alarm stops.
+
+Three new domain tests cover the volume floor, the ceiling, and the default.
+
+### Still open, and recorded rather than fixed
+
+**The alarm is 26–70 seconds late on the test device, and pressing Home still
+defers it entirely.** This is gate run 8's finding and it is not addressed by
+anything above. The next thing to try is written down there: a receiver
+registered at runtime by the live watch service, so delivery does not pass
+through a manifest component and the manufacturer's auto-start gate. Stage 2
+begins with this outstanding, at the user's decision, and it stays here until
+it is closed.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take

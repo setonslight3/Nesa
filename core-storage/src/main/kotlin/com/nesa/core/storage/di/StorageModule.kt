@@ -7,6 +7,7 @@ import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.model.repository.GoalRepository
 import com.nesa.core.model.repository.HistoryRepository
 import com.nesa.core.storage.NesaDatabase
+import com.nesa.core.storage.NesaMigrations
 import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
 import com.nesa.core.storage.dao.GoalDao
@@ -33,6 +34,7 @@ object DatabaseModule {
         Room.databaseBuilder(context, NesaDatabase::class.java, NesaDatabase.NAME)
             // No destructive migration: a schema change must be handled
             // explicitly rather than quietly erasing the user's plan.
+            .addMigrations(*NesaMigrations.ALL)
             .build()
 
     @Provides

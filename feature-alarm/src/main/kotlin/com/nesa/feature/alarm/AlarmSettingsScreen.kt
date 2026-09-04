@@ -1,5 +1,11 @@
 package com.nesa.feature.alarm
 
+import android.app.Activity
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -13,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -29,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nesa.core.model.Alarm
 import com.nesa.core.model.ChallengeDifficulty
 import com.nesa.core.model.WakeChallengeType
 import com.nesa.core.ui.component.NesaScaffold
@@ -61,6 +69,24 @@ fun AlarmSettingsScreen(
     val context = LocalContext.current
     var pickingTime by remember { mutableStateOf(false) }
     val nextFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
+
+    // The system ringtone picker, rather than a list of NESA's own.
+    // RingtoneManager.ACTION_RINGTONE_PICKER shows every sound the phone already
+    // has, including ones the user has added, and it is the screen they already
+    // know from the clock app. Writing our own would show fewer sounds and look
+    // unfamiliar for no gain.
+    val soundPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val picked: Uri? = result.data
+                ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            // A null here is the picker's "Silent" entry. Stored as null, which
+            // AlarmAudioPlayer reads as "use the device default" — NESA does not
+            // keep an alarm that cannot make a sound.
+            viewModel.onSoundChanged(picked?.toString())
+        }
+    }
 
     NesaScaffold(
         title = stringResource(R.string.alarm_title),
@@ -211,6 +237,55 @@ fun AlarmSettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
 
+            SectionHeader(title = stringResource(R.string.alarm_sound_section))
+
+            // Remembered against the URI: resolving a ringtone's title opens the
+            // media file, and doing that on every recomposition would put file
+            // I/O on the main thread for a string that only changes when the
+            // user picks a different sound.
+            val soundName = remember(alarm.soundUri) { ringtoneTitle(context, alarm.soundUri) }
+            Text(
+                text = stringResource(R.string.alarm_sound_current, soundName),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            FilledTonalButton(
+                onClick = {
+                    soundPicker.launch(
+                        Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                            putExtra(
+                                RingtoneManager.EXTRA_RINGTONE_TITLE,
+                                context.getString(R.string.alarm_sound_picker_title)
+                            )
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                            // No "Silent" entry: this is an alarm.
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            putExtra(
+                                RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+                                alarm.soundUri?.let(Uri::parse)
+                            )
+                        }
+                    )
+                }
+            ) {
+                Text(stringResource(R.string.alarm_sound_choose))
+            }
+
+            StepperRow(
+                label = stringResource(R.string.alarm_volume),
+                value = stringResource(R.string.alarm_volume_value, alarm.volumePercent),
+                sliderValue = alarm.volumePercent.toFloat(),
+                range = Alarm.MIN_VOLUME_PERCENT.toFloat()..100f,
+                // 10% steps across a 10..100 range.
+                steps = 8,
+                onChange = { viewModel.onVolumeChanged(it.toInt()) }
+            )
+            Text(
+                text = stringResource(R.string.alarm_volume_support),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             SwitchRow(
                 title = stringResource(R.string.alarm_vibrate),
                 checked = alarm.vibrate,
@@ -309,3 +384,19 @@ private fun DayOfWeek.shortLabel(): String = stringResource(
         DayOfWeek.SUNDAY -> R.string.alarm_day_sun
     }
 )
+
+/**
+ * The human name of a sound, for a screen that must not show a content URI.
+ *
+ * Falls back to "the phone's default" whenever the name cannot be resolved —
+ * which includes a sound on a removed SD card, or one whose app has been
+ * uninstalled. Those are exactly the cases where AlarmAudioPlayer will fall
+ * through to a device default too, so the screen and the alarm agree.
+ */
+private fun ringtoneTitle(context: android.content.Context, uri: String?): String {
+    val fallback = context.getString(R.string.alarm_sound_default)
+    if (uri == null) return fallback
+    return runCatching {
+        RingtoneManager.getRingtone(context, Uri.parse(uri))?.getTitle(context)
+    }.getOrNull()?.takeIf { it.isNotBlank() } ?: fallback
+}
