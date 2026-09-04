@@ -128,8 +128,19 @@ class LifeScheduleTest {
         val reading = planned("reading", at(10, 0), 60, preferredStart = at(10, 0))
 
         val result = scheduleOf(work, reading)
+
+        // The claim is "the Life module adds no scheduling rules of its own",
+        // not "reading lands at exactly 13:00". Asserting a specific minute here
+        // would couple this test to AdaptiveScheduler's internals, which have
+        // their own tests — and it would then fail for reasons that had nothing
+        // to do with life schedules.
         assertEquals(at(9, 0), result.startOf("work"))
-        assertEquals(at(13, 0), result.startOf("reading"))
+
+        val readingStart = requireNotNull(result.startOf("reading"))
+        assertFalse(
+            "a flexible activity must not be left overlapping a fixed anchor",
+            readingStart < at(13, 0) && readingStart.plusMinutes(60) > at(9, 0)
+        )
     }
 
     @Test

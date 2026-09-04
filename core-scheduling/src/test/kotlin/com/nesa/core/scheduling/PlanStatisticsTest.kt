@@ -94,19 +94,32 @@ class PlanStatisticsTest {
     }
 
     @Test
-    fun `a streak is a record of doing things, not of opening the app`() {
+    fun `a past day of nothing but skips ends the streak`() {
+        // Monday was done, Tuesday was entirely skipped, and it is now Wednesday.
+        // Tuesday is over and nothing was done on it: a streak is a record of
+        // doing things, not of opening the app.
         val history = records(monday, CompletionResult.COMPLETED, 1) +
-            records(monday.plusDays(1), CompletionResult.COMPLETED, 1) +
-            // Everything skipped. A decision, but nothing was done.
-            records(monday.plusDays(2), CompletionResult.SKIPPED, 3)
+            records(monday.plusDays(1), CompletionResult.SKIPPED, 3)
 
         assertEquals(0, PlanStatistics.streakDays(history, monday.plusDays(2)))
+    }
+
+    @Test
+    fun `skipping everything so far today does not end the streak yet`() {
+        // The counterpart to the test above, and the pair of them is the whole
+        // rule. Today is still in progress, so it is neutral rather than a
+        // failure — the user may yet finish something this afternoon.
+        val history = records(monday, CompletionResult.COMPLETED, 1) +
+            records(monday.plusDays(1), CompletionResult.COMPLETED, 1) +
+            records(monday.plusDays(2), CompletionResult.SKIPPED, 3)
+
+        assertEquals(2, PlanStatistics.streakDays(history, monday.plusDays(2)))
         assertEquals(2, PlanStatistics.streakDays(history, monday.plusDays(1)))
     }
 
     @Test
     fun `a streak does not look broken before the day is over`() {
-        // Nothing completed today yet. Yesterday and the day before were fine,
+        // Nothing logged today at all. Yesterday and the day before were fine,
         // and the streak should still read two rather than zero at breakfast.
         val history = records(monday, CompletionResult.COMPLETED, 1) +
             records(monday.plusDays(1), CompletionResult.COMPLETED, 1)

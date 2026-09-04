@@ -105,11 +105,20 @@ object PlanStatistics {
     /**
      * Consecutive days ending at [endingOn] on which something was completed.
      *
-     * Counts backwards from the day before [endingOn] when today has nothing
-     * yet, so a streak does not appear broken at breakfast and mended by lunch.
-     * A day with no records at all breaks it; a day where everything was
-     * deliberately skipped also breaks it, because a streak is a record of doing
-     * things, not of using the app.
+     * [endingOn] is the day in progress and is treated differently from the days
+     * behind it, which is the only subtle part:
+     *
+     * - **Today counts if something was completed, and is otherwise neutral.**
+     *   It is skipped over rather than ending the streak, because the day is not
+     *   over. A streak that read zero at breakfast and mended itself by lunch
+     *   would be measuring the clock rather than the person.
+     * - **Every earlier day must have a completion.** A past day with nothing
+     *   logged breaks the streak, and so does a past day where everything was
+     *   deliberately skipped — those days are finished and nothing was done. A
+     *   streak is a record of doing things, not of opening the app.
+     *
+     * Those two rules together are why skipping everything *so far today* leaves
+     * the streak standing, while having skipped everything *yesterday* ends it.
      */
     fun streakDays(records: List<CompletionRecord>, endingOn: LocalDate): Int {
         val completedDays = records

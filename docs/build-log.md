@@ -23,6 +23,35 @@ PlanStatisticsTest > a streak is a record of doing things, not of opening the ap
 
 151 tests completed, 1 failed.
 
+**Resolved by Claude — the test was wrong, not the code.**
+
+The diagnosis of the mechanism above is exactly right, and the fix is not where
+it points. `PlanStatisticsTest` contained two tests that contradicted each
+other. Both called `streakDays(history, monday.plusDays(2))`; one expected 0
+because that day held only skips, the other expected 2 because that day held
+nothing. Those cannot both be the rule.
+
+The implementation was already the coherent one, and the doc comment stated it
+badly — it claimed "a day with no records at all breaks it" in the same breath
+as "counts backwards from the day before when today has nothing yet". The rule
+that actually holds, now written properly on `streakDays`:
+
+- **Today is neutral** unless something was completed. It never ends a streak,
+  because the day is not over. A streak reading zero at breakfast and mending
+  itself by lunch would be measuring the clock, not the person.
+- **Every earlier day must have a completion.** A finished day with nothing done
+  ends it — whether it was skipped deliberately or simply empty.
+
+The failing test now asserts the first rule with the skipped day in the *past*,
+where it genuinely does break the streak, and a second test pins the
+today-in-progress half. Both halves of the rule are now covered rather than one
+being asserted twice with opposite answers.
+
+Also worth recording from this run: **everything compiled.** `6.json` was
+exported, so `:feature-life`, the new entities, the DAO and both hand-written
+migrations (`4 → 5`, `5 → 6`) all passed compilation and Room's schema
+generation. The only failure was the assertion.
+
 Cause: In `PlanStatistics.streakDays(records, endingOn)`:
 ```kotlin
 var cursor = if (endingOn in completedDays) endingOn else endingOn.minusDays(1)

@@ -190,7 +190,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 166 unit tests over the scheduler, the state
+The domain modules carry the weight: 167 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.
