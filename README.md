@@ -4,7 +4,9 @@ An adaptive personal assistant for Android. NESA plans a practical day with you,
 protects the commitments that cannot move, and helps you recover the ones that
 slip — without turning productivity into punishment.
 
-**Status: Stage 1 (Core) is implemented.** Stages 2–5 have not been started.
+**Status: Stage 1 (Core) is implemented, with one open defect (see
+`docs/verification.md`). Stage 2 has begun with recurrence.** Stages 3–5 have
+not been started.
 
 ---
 

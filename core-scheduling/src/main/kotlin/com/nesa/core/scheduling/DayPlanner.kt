@@ -45,7 +45,13 @@ class DayPlanner(
     suspend fun refresh(date: LocalDate): ScheduleResult {
         val preferences = settings.current()
         val now = LocalDateTime.now(clock)
-        val stored = activities.plan(date)
+
+        // Recurrence is materialised first, so a repeating activity is on the
+        // day before anything else looks at it. Doing this after the miss pass
+        // would let a block created for today be judged missed in the same
+        // breath, and doing it after scheduling would leave it unplaced until
+        // the next refresh.
+        val stored = materialiseRecurring(date)
 
         val afterMisses = recordMisses(stored, now, preferences.guidance)
 
@@ -70,6 +76,32 @@ class DayPlanner(
         onPlanChanged.onPlanChanged(date)
 
         return result
+    }
+
+    /**
+     * Fills in the blocks this day's recurring activities are missing.
+     *
+     * Safe to run on every refresh: [RecurrenceMaterialiser] skips any activity
+     * that already has a block on the date, so a second pass adds nothing.
+     *
+     * @return the day's plan including anything just created, so the caller
+     *   works from one list rather than re-reading.
+     */
+    private suspend fun materialiseRecurring(date: LocalDate): List<PlannedActivity> {
+        val existing = activities.plan(date)
+        val missing = RecurrenceMaterialiser.blocksFor(
+            date = date,
+            activities = activities.repeatingActivities(),
+            existingActivityIds = existing.map { it.activity.id }.toSet(),
+            idFactory = idFactory
+        )
+        if (missing.isEmpty()) return existing
+
+        activities.addBlocks(missing)
+        // Re-read rather than splicing the new blocks in by hand: the repository
+        // is the source of truth for what a day contains, and a hand-built list
+        // that disagreed with it would be a bug nobody could see.
+        return activities.plan(date)
     }
 
     /**

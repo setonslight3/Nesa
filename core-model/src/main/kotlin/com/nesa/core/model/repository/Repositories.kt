@@ -35,8 +35,19 @@ interface ActivityRepository {
 
     suspend fun findBlock(blockId: String): PlannedActivity?
 
+    /**
+     * Every activity that repeats, so a day can be filled in from its rules.
+     *
+     * Only the repeating ones: a one-off activity has the single block it was
+     * created with and there is nothing to derive.
+     */
+    suspend fun repeatingActivities(): List<Activity>
+
     /** Creates or replaces an activity together with its placement. */
     suspend fun save(activity: Activity, block: ScheduleBlock)
+
+    /** Adds placements the recurrence rules say a day is missing. */
+    suspend fun addBlocks(blocks: List<ScheduleBlock>)
 
     /** Writes back placements produced by the scheduler. */
     suspend fun updateBlocks(blocks: List<ScheduleBlock>)

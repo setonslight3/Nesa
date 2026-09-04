@@ -24,6 +24,11 @@ data class Activity(
     val preferredStart: LocalTime? = null,
     /** Hard latest finish, only meaningful for [Flexibility.DEADLINE_BASED]. */
     val deadline: LocalDateTime? = null,
+    /**
+     * How often it comes back. [Recurrence.Once] is a single occurrence, which
+     * is everything Stage 1 could express.
+     */
+    val recurrence: Recurrence = Recurrence.Once,
     val createdAt: Instant = Instant.EPOCH,
     val updatedAt: Instant = Instant.EPOCH
 ) {
@@ -36,4 +41,7 @@ data class Activity(
     val isAnchor: Boolean get() = flexibility == Flexibility.FIXED
 
     val durationMinutes: Int get() = duration.toMinutes().toInt()
+
+    /** True when this activity should produce a block on more than one day. */
+    val repeats: Boolean get() = recurrence.repeats
 }

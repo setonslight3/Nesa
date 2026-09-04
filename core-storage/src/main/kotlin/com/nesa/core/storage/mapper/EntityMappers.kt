@@ -14,6 +14,8 @@ import com.nesa.core.model.GoalCategory
 import com.nesa.core.model.GoalStatus
 import com.nesa.core.model.NesaModule
 import com.nesa.core.model.Priority
+import com.nesa.core.model.Recurrence
+import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.SnoozePolicy
 import com.nesa.core.model.WakeChallengePolicy
@@ -54,9 +56,33 @@ fun ActivityEntity.toDomain(): Activity = Activity(
     flexibility = flexibility.toEnum(Flexibility.TIME_FLEXIBLE),
     preferredStart = preferredStartMinute?.let(DayWindow::timeOf),
     deadline = deadline?.let(LocalDateTime::parse),
+    recurrence = readRecurrence(),
     createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
     updatedAt = Instant.ofEpochMilli(updatedAtEpochMillis)
 )
+
+/**
+ * Rebuilds a recurrence rule, falling back to "happens once" rather than
+ * throwing.
+ *
+ * `Recurrence`'s constructor rejects an incoherent rule — a weekly one with no
+ * days, an interval with nothing to count from. That is right for code building
+ * a rule, and wrong here: a row written by a newer build, or one left
+ * inconsistent by a migration, must not be able to crash the timeline. A
+ * one-off is the safe reading, because it under-schedules rather than
+ * inventing days the user never asked for.
+ */
+private fun ActivityEntity.readRecurrence(): Recurrence = runCatching {
+    Recurrence(
+        frequency = recurrenceFrequency.toEnum(RecurrenceFrequency.Default),
+        interval = recurrenceInterval.coerceIn(1, Recurrence.MAX_INTERVAL),
+        daysOfWeek = recurrenceDays.split(',')
+            .mapNotNull { name -> DayOfWeek.entries.firstOrNull { it.name == name.trim() } }
+            .toSet(),
+        startDate = recurrenceStart?.let(LocalDate::parse),
+        endDate = recurrenceEnd?.let(LocalDate::parse)
+    )
+}.getOrDefault(Recurrence.Once)
 
 fun Activity.toEntity(): ActivityEntity = ActivityEntity(
     id = id,
@@ -68,6 +94,11 @@ fun Activity.toEntity(): ActivityEntity = ActivityEntity(
     flexibility = flexibility.name,
     preferredStartMinute = preferredStart?.let(DayWindow::minuteOf),
     deadline = deadline?.toString(),
+    recurrenceFrequency = recurrence.frequency.name,
+    recurrenceInterval = recurrence.interval,
+    recurrenceDays = recurrence.daysOfWeek.joinToString(",") { it.name },
+    recurrenceStart = recurrence.startDate?.toString(),
+    recurrenceEnd = recurrence.endDate?.toString(),
     createdAtEpochMillis = createdAt.toEpochMilli(),
     updatedAtEpochMillis = updatedAt.toEpochMilli()
 )

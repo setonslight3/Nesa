@@ -45,6 +45,11 @@
     <string name="editor_start">Start at</string>
     <string name="editor_duration">How long?</string>
     <string name="editor_duration_value">%1$d minutes</string>
+    <string name="editor_repeat">Repeat</string>
+    <string name="editor_repeat_once">Once</string>
+    <string name="editor_repeat_daily">Every day</string>
+    <string name="editor_repeat_weekdays">Weekdays</string>
+    <string name="editor_repeat_custom">Certain days</string>
     <string name="editor_priority">How important is it?</string>
     <string name="editor_flexibility">Can NESA move it?</string>
     <string name="editor_flexibility_help_fixed">NESA will plan everything else around this.</string>

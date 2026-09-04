@@ -28,6 +28,16 @@ data class ActivityEntity(
     val preferredStartMinute: Int?,
     /** ISO-8601 local date-time, or null when the activity has no deadline. */
     val deadline: String?,
+    // Recurrence, added in schema 3. Five primitives rather than a serialised
+    // rule object: Room stores primitives only, and a column per field is
+    // queryable and readable in a schema diff.
+    val recurrenceFrequency: String,
+    val recurrenceInterval: Int,
+    /** Comma-separated DayOfWeek names; empty for non-weekly rules. */
+    val recurrenceDays: String,
+    /** ISO-8601 local dates, or null when the rule needs no anchor or no end. */
+    val recurrenceStart: String?,
+    val recurrenceEnd: String?,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long
 )

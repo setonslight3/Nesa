@@ -31,7 +31,21 @@ class FakeActivityRepository(initial: List<PlannedActivity> = emptyList()) : Act
 
     private val state = MutableStateFlow(initial)
 
+    /**
+     * Activities on their own, apart from their placements.
+     *
+     * A recurring activity exists on days it has no block for yet — that is the
+     * whole point of it — so the fake cannot derive the activity list from the
+     * blocks the way it did when every activity had exactly one.
+     */
+    private val known = initial.map { it.activity }.associateBy { it.id }.toMutableMap()
+
     val items: List<PlannedActivity> get() = state.value
+
+    /** Registers an activity that has no placement yet. */
+    fun addActivity(activity: Activity) {
+        known[activity.id] = activity
+    }
 
     fun block(blockId: String): ScheduleBlock? = state.value.firstOrNull { it.block.id == blockId }?.block
 
@@ -47,8 +61,19 @@ class FakeActivityRepository(initial: List<PlannedActivity> = emptyList()) : Act
     override suspend fun findBlock(blockId: String): PlannedActivity? =
         state.value.firstOrNull { it.block.id == blockId }
 
+    override suspend fun repeatingActivities(): List<Activity> =
+        known.values.filter { it.repeats }
+
     override suspend fun save(activity: Activity, block: ScheduleBlock) {
+        known[activity.id] = activity
         state.value = state.value.filterNot { it.block.id == block.id } + PlannedActivity(activity, block)
+    }
+
+    override suspend fun addBlocks(blocks: List<ScheduleBlock>) {
+        val added = blocks.mapNotNull { block ->
+            known[block.activityId]?.let { PlannedActivity(it, block) }
+        }
+        state.value = state.value + added
     }
 
     override suspend fun updateBlocks(blocks: List<ScheduleBlock>) {

@@ -6,6 +6,7 @@ import com.nesa.core.model.Alarm
 import com.nesa.core.model.CompletionRecord
 import com.nesa.core.model.Goal
 import com.nesa.core.model.PlannedActivity
+import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.WakeChallengeResult
 import com.nesa.core.model.repository.ActivityRepository
@@ -56,8 +57,16 @@ class RoomActivityRepository @Inject constructor(
         return PlannedActivity(activity.toDomain(), block.toDomain())
     }
 
+    override suspend fun repeatingActivities(): List<Activity> =
+        dao.repeatingActivities(RecurrenceFrequency.NONE.name).map { it.toDomain() }
+
     override suspend fun save(activity: Activity, block: ScheduleBlock) {
         dao.save(activity.toEntity(), block.toEntity())
+    }
+
+    override suspend fun addBlocks(blocks: List<ScheduleBlock>) {
+        if (blocks.isEmpty()) return
+        dao.upsertBlocks(blocks.map { it.toEntity() })
     }
 
     override suspend fun updateBlocks(blocks: List<ScheduleBlock>) {

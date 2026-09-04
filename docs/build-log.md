@@ -7,6 +7,30 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — Stage 2 begins: recurrence
+
+Activities can now repeat. Domain-first, as usual:
+
+- `Recurrence` in core-model — a flat data class, not a sealed hierarchy,
+  because Room stores primitives only. Daily/weekly/monthly with an interval,
+  named days, an optional anchor and an optional end date. `occursOn(date)` is
+  pure and total.
+- `RecurrenceMaterialiser` in core-scheduling — creates the blocks a day is
+  missing and is **idempotent**, which is the safety property that matters:
+  `DayPlanner.refresh` runs on every pass. `AdaptiveScheduler` is untouched; a
+  recurring activity is placed by exactly the same rules as a hand-added one.
+- **Schema 2 → 3** — five columns on `activities`, every existing row defaulting
+  to NONE so nothing a user already has starts repeating behind their back.
+- `ActivityRepository` gains `repeatingActivities()` and `addBlocks()`.
+- Repeat chips on the activity editor: Once / Every day / Weekdays / Certain days.
+
+Fourteen new domain tests, including the every-other-week case that keeps both
+of its days in the same week, and the monthly rule on the 31st that still
+happens in February. Expect **115 domain tests**.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## Pending — reminders that can be heard, and the alarm left open
 
 The reminders channel was created at `IMPORTANCE_DEFAULT`: a sound, never a

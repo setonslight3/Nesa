@@ -8,6 +8,8 @@ import com.nesa.core.model.ActivityState
 import com.nesa.core.model.DayWindow
 import com.nesa.core.model.Flexibility
 import com.nesa.core.model.Priority
+import com.nesa.core.model.Recurrence
+import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.SettingsRepository
@@ -21,6 +23,7 @@ import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -36,6 +39,7 @@ data class ActivityEditorUiState(
     val priority: Priority = Priority.NORMAL,
     val flexibility: Flexibility = Flexibility.TIME_FLEXIBLE,
     val deadline: LocalTime? = null,
+    val recurrence: Recurrence = Recurrence.Once,
     val date: LocalDate = LocalDate.now(),
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -43,6 +47,10 @@ data class ActivityEditorUiState(
 ) {
     val isEditing: Boolean get() = activityId != null
     val showsDeadline: Boolean get() = flexibility == Flexibility.DEADLINE_BASED
+
+    /** The day chips are only meaningful for a rule that names days. */
+    val showsRecurrenceDays: Boolean
+        get() = recurrence.frequency == RecurrenceFrequency.WEEKLY
 }
 
 /**
@@ -103,6 +111,59 @@ class ActivityEditorViewModel @Inject constructor(
 
     fun onDeadlineChanged(deadline: LocalTime) = _state.update { it.copy(deadline = deadline) }
 
+    /**
+     * Anchored to the day being edited, so "every other week" counts from the
+     * week the user is actually looking at rather than from an arbitrary date.
+     */
+    fun onRecurrenceChanged(recurrence: Recurrence) = _state.update { current ->
+        current.copy(
+            recurrence = if (recurrence.repeats) {
+                recurrence.copy(startDate = recurrence.startDate ?: current.date)
+            } else {
+                recurrence
+            }
+        )
+    }
+
+    /**
+     * Switches to "certain days", seeded with the day being edited.
+     *
+     * Separate from the preset chips because the seed depends on the date, which
+     * a constant cannot know — and without it there is no way into the day
+     * chips at all: they only show for a weekly rule, and nothing else would
+     * create one.
+     */
+    fun onChooseDaysRequested() = _state.update { current ->
+        if (current.recurrence.frequency == RecurrenceFrequency.WEEKLY) {
+            current
+        } else {
+            current.copy(
+                recurrence = Recurrence(
+                    frequency = RecurrenceFrequency.WEEKLY,
+                    daysOfWeek = setOf(current.date.dayOfWeek),
+                    startDate = current.date
+                )
+            )
+        }
+    }
+
+    fun onRecurrenceDayToggled(day: DayOfWeek) = _state.update { current ->
+        val days = current.recurrence.daysOfWeek.let { if (day in it) it - day else it + day }
+        current.copy(
+            recurrence = if (days.isEmpty()) {
+                // Un-ticking the last day means "stop repeating", not an
+                // impossible weekly rule with nowhere to land.
+                Recurrence.Once
+            } else {
+                current.recurrence.copy(
+                    frequency = RecurrenceFrequency.WEEKLY,
+                    daysOfWeek = days,
+                    startDate = current.recurrence.startDate ?: current.date
+                )
+            }
+        )
+    }
+
     fun onSave() {
         val current = _state.value
         if (current.title.isBlank()) {
@@ -126,6 +187,7 @@ class ActivityEditorViewModel @Inject constructor(
                 flexibility = current.flexibility,
                 preferredStart = current.start,
                 deadline = current.deadline?.let { LocalDateTime.of(current.date, it) },
+                recurrence = current.recurrence,
                 createdAt = existing?.activity?.createdAt ?: now,
                 updatedAt = now
             )
@@ -161,6 +223,7 @@ class ActivityEditorViewModel @Inject constructor(
                 priority = item.activity.priority,
                 flexibility = item.activity.flexibility,
                 deadline = item.activity.deadline?.toLocalTime(),
+                recurrence = item.activity.recurrence,
                 date = item.block.date
             )
         }

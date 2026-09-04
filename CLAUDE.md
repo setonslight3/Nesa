@@ -8,9 +8,10 @@ An Android-first adaptive personal assistant. It plans a practical day, protects
 commitments that cannot move, and helps the user recover the ones that slip.
 
 **It is being built in five stages, and the stages are gates, not suggestions.**
-Stage 1 (Core) is implemented. Stages 2–5 are not started. Do not implement a
-later stage's features early — fitness, focus, learning, AI, voice, sync, widgets
-and the theme engine all belong to Stages 2–5. A small architectural hook is
+Stage 1 (Core) is implemented. **Stage 2 has begun, with recurrence** — the
+rest of Stage 2 and Stages 3–5 are not started. Do not implement a later
+stage's features early: fitness, focus, learning, AI, voice, sync, widgets and
+the theme engine all belong to Stages 2–5. A small architectural hook is
 acceptable; a half-built feature is not.
 
 `docs/verification.md` records exactly what has been verified and what has not.
@@ -121,8 +122,12 @@ intents, this layer decides.
 
 ### Things that will bite you
 
-- **`Activity` (what) and `ScheduleBlock` (when) are separate.** Stage 1 has one
-  block per activity; the split exists so Stage 2 recurrence needs no migration.
+- **`Activity` (what) and `ScheduleBlock` (when) are separate.** This is what
+  let recurrence arrive without touching the scheduler: one activity carrying a
+  `Recurrence` produces a block on every day it matches, and `AdaptiveScheduler`
+  still sees an ordinary list of blocks. `RecurrenceMaterialiser` creates the
+  missing ones and is idempotent — `DayPlanner.refresh` runs it on every pass,
+  so a second block would mean a duplicate reminder and a duplicate timeline row.
 - **Room entities store primitives only** — no type converters, no enums, no
   `java.time`. `mapper/EntityMappers.kt` is the single translation point, and
   unknown enum values fall back to a default rather than crashing a launch.
@@ -158,7 +163,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 101 unit tests over the scheduler, the state
+The domain modules carry the weight: 115 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.

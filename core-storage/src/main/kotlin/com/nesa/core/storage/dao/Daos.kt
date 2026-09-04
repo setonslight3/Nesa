@@ -50,6 +50,16 @@ interface ActivityDao {
     @Query("SELECT * FROM activities WHERE id = :activityId")
     suspend fun activity(activityId: String): ActivityEntity?
 
+    /**
+     * Every activity with a recurrence rule.
+     *
+     * Filtered in SQL rather than in Kotlin because this runs on every refresh
+     * of a day, and reading the whole activity table to discard most of it would
+     * get slower with every activity the user ever created.
+     */
+    @Query("SELECT * FROM activities WHERE recurrenceFrequency != :none")
+    suspend fun repeatingActivities(none: String): List<ActivityEntity>
+
     @Upsert
     suspend fun upsertActivity(activity: ActivityEntity)
 

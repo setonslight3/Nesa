@@ -28,12 +28,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nesa.core.model.Flexibility
 import com.nesa.core.model.Priority
+import com.nesa.core.model.Recurrence
 import com.nesa.core.ui.component.NesaScaffold
 import com.nesa.core.ui.component.NesaTimePickerDialog
 import com.nesa.core.ui.component.NoticeCard
 import com.nesa.core.ui.component.TimeField
 import com.nesa.core.ui.format.label
 import com.nesa.core.ui.theme.NesaSpacing
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * Add or edit an activity.
@@ -152,6 +156,43 @@ fun ActivityEditorScreen(
                 NoticeCard(text = state.flexibility.help())
             }
 
+            Column(verticalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+                Text(
+                    text = stringResource(R.string.editor_repeat),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+                    RepeatPreset.entries.forEach { preset ->
+                        FilterChip(
+                            selected = preset.matches(state.recurrence),
+                            onClick = { viewModel.onRecurrenceChanged(preset.recurrence) },
+                            label = { Text(stringResource(preset.label)) }
+                        )
+                    }
+                    // Not a preset: the days it starts from depend on the date
+                    // being edited, which a constant cannot know.
+                    FilterChip(
+                        selected = state.showsRecurrenceDays &&
+                            RepeatPreset.entries.none { it.matches(state.recurrence) },
+                        onClick = viewModel::onChooseDaysRequested,
+                        label = { Text(stringResource(R.string.editor_repeat_custom)) }
+                    )
+                }
+                if (state.showsRecurrenceDays) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
+                        DayOfWeek.entries.forEach { day ->
+                            FilterChip(
+                                selected = day in state.recurrence.daysOfWeek,
+                                onClick = { viewModel.onRecurrenceDayToggled(day) },
+                                label = {
+                                    Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             if (state.showsDeadline) {
                 TimeField(
                     label = stringResource(R.string.editor_deadline),
@@ -205,3 +246,27 @@ private fun Flexibility.help(): String = stringResource(
         Flexibility.DEADLINE_BASED -> R.string.editor_flexibility_help_deadline
     }
 )
+
+/**
+ * The repeat choices offered as chips.
+ *
+ * Presets rather than a rule builder: "every day" and "weekdays" cover almost
+ * everything a person actually schedules, and picking days directly covers the
+ * rest. The full Recurrence type supports intervals and end dates; nothing in
+ * this screen produces them yet, and a builder for rules nobody asked for would
+ * be a worse first version than four chips.
+ */
+private enum class RepeatPreset(val label: Int, val recurrence: Recurrence) {
+    ONCE(R.string.editor_repeat_once, Recurrence.Once),
+    DAILY(R.string.editor_repeat_daily, Recurrence.EveryDay),
+    WEEKDAYS(R.string.editor_repeat_weekdays, Recurrence.Weekdays);
+
+    /**
+     * Compared on frequency and days only. A rule carries a start date anchored
+     * to the day being edited, so comparing whole objects would leave every chip
+     * unselected the moment the user picked one.
+     */
+    fun matches(current: Recurrence): Boolean =
+        current.frequency == recurrence.frequency &&
+            current.daysOfWeek == recurrence.daysOfWeek
+}

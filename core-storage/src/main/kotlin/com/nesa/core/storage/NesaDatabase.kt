@@ -30,7 +30,7 @@ import com.nesa.core.storage.entity.WakeChallengeResultEntity
         CompletionRecordEntity::class,
         WakeChallengeResultEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class NesaDatabase : RoomDatabase() {
