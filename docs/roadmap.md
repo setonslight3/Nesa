@@ -1,8 +1,8 @@
 # Stages 3–5: what is left, and what each needs
 
-Stage 1 is built (one open defect, see `verification.md`). Stage 2 is built —
-recurrence and fitness — and has **not compiled yet**: the last build failed on a
-cross-module smart cast, fixed in `c532b1c` and not yet rebuilt.
+Stage 1 is built (one open defect, see `verification.md`). Stage 2 is built and
+**green**: `c532b1c` compiled and passed 127/127 domain tests, and Room accepted
+the hand-written `3 → 4` migration — `schemas/…/4.json` is the proof.
 
 This document exists so the remaining work does not have to be re-derived from a
 conversation nobody else can see. It is written for whoever picks this up next,
@@ -95,12 +95,12 @@ it is what proves the intent layer is safe before anything clever is wired to it
 
 ## The order to build in, and why
 
-1. **Get a green build first.** Stage 2 has not compiled since `9111402`, and
-   there are now three hand-written Room migrations (`1→2`, `2→3`, `3→4`, `4→5`)
-   that no build has yet validated. Room checks a migrated schema against its own
-   and throws on any difference. Stacking more unverified schema changes on top
-   is how a day gets lost to a cascade of errors that could have been caught one
-   at a time.
+1. **One schema change per build.** Migrations `1→2` through `3→4` are validated
+   — `c532b1c` built green and Room exported `4.json`. `4→5` is not yet. Room
+   checks a migrated schema against its own and throws on any difference, so
+   stacking several unverified schema changes turns one clear error into a
+   cascade. Each stage below that adds tables should get a build of its own
+   before the next one lands.
 2. Stage 3's focus and learning modules — unblocked, no decisions needed.
 3. Stage 4's intent layer and voice — unblocked, and it is the safety boundary
    the model work depends on.
