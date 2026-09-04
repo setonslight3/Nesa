@@ -142,11 +142,48 @@ object NesaMigrations {
         }
     }
 
+    /**
+     * 5 → 6: the Life module's schedules.
+     *
+     * Two new tables, nothing existing touched. `schedule_entries` cascades
+     * from its schedule: an entry with no schedule is meaningless, unlike a
+     * workout session, which outlives the routine it followed.
+     *
+     * As with 3 → 4, the DDL is written to match what Room generates. If a build
+     * fails here with an "expected/found" schema dump, make this match the
+     * *expected* half — never relax the entity to match this.
+     */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `life_schedules` (" +
+                    "`id` TEXT NOT NULL, `name` TEXT NOT NULL, `kind` TEXT NOT NULL, " +
+                    "`enabled` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `schedule_entries` (" +
+                    "`id` TEXT NOT NULL, `scheduleId` TEXT NOT NULL, " +
+                    "`title` TEXT NOT NULL, `days` TEXT NOT NULL, " +
+                    "`startMinute` INTEGER NOT NULL, `durationMinutes` INTEGER NOT NULL, " +
+                    "`priority` TEXT NOT NULL, `flexibility` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`scheduleId`) REFERENCES `life_schedules`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_schedule_entries_scheduleId` " +
+                    "ON `schedule_entries` (`scheduleId`)"
+            )
+        }
+    }
+
     /** Every migration, in order, for the database builder. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
         MIGRATION_3_4,
-        MIGRATION_4_5
+        MIGRATION_4_5,
+        MIGRATION_5_6
     )
 }

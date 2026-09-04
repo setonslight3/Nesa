@@ -39,6 +39,7 @@ include(":feature-timeline")
 include(":feature-alarm")
 include(":feature-settings")
 include(":feature-fitness")
+include(":feature-life")
 
 // --- Application shell ------------------------------------------------------
 include(":app")

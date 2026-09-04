@@ -6,6 +6,7 @@ import com.nesa.core.model.Alarm
 import com.nesa.core.model.CompletionRecord
 import com.nesa.core.model.Exercise
 import com.nesa.core.model.Goal
+import com.nesa.core.model.LifeSchedule
 import com.nesa.core.model.PlannedActivity
 import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
@@ -17,11 +18,13 @@ import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.model.repository.FitnessRepository
 import com.nesa.core.model.repository.GoalRepository
 import com.nesa.core.model.repository.HistoryRepository
+import com.nesa.core.model.repository.LifeScheduleRepository
 import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
 import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
 import com.nesa.core.storage.dao.HistoryDao
+import com.nesa.core.storage.dao.LifeScheduleDao
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
 import com.nesa.core.storage.entity.SetLogEntity
@@ -69,6 +72,10 @@ class RoomActivityRepository @Inject constructor(
 
     override suspend fun save(activity: Activity, block: ScheduleBlock) {
         dao.save(activity.toEntity(), block.toEntity())
+    }
+
+    override suspend fun saveActivity(activity: Activity) {
+        dao.upsertActivity(activity.toEntity())
     }
 
     override suspend fun addBlocks(blocks: List<ScheduleBlock>) {
@@ -245,5 +252,34 @@ class RoomFitnessRepository @Inject constructor(
     ): List<WorkoutSession> {
         val bySession = logs.groupBy { it.sessionId }
         return sessions.map { it.toDomain(bySession[it.id].orEmpty()) }
+    }
+}
+
+/** Life schedules, backed by Room. Header and entries joined in Kotlin. */
+@Singleton
+class RoomLifeScheduleRepository @Inject constructor(
+    private val dao: LifeScheduleDao
+) : LifeScheduleRepository {
+
+    override fun observeSchedules(): Flow<List<LifeSchedule>> =
+        combine(dao.observeSchedules(), dao.observeAllEntries()) { schedules, entries ->
+            val byScheduleId = entries.groupBy { it.scheduleId }
+            schedules.map { it.toDomain(byScheduleId[it.id].orEmpty()) }
+        }
+
+    override suspend fun schedules(): List<LifeSchedule> {
+        val byScheduleId = dao.allEntries().groupBy { it.scheduleId }
+        return dao.schedules().map { it.toDomain(byScheduleId[it.id].orEmpty()) }
+    }
+
+    override suspend fun schedule(scheduleId: String): LifeSchedule? =
+        dao.schedule(scheduleId)?.toDomain(dao.entries(scheduleId))
+
+    override suspend fun save(schedule: LifeSchedule) {
+        dao.saveSchedule(schedule.toEntity(), schedule.entries.map { it.toEntity(schedule.id) })
+    }
+
+    override suspend fun delete(scheduleId: String) {
+        dao.deleteSchedule(scheduleId)
     }
 }

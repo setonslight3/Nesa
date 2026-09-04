@@ -7,13 +7,16 @@ import com.nesa.core.storage.dao.AlarmDao
 import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
 import com.nesa.core.storage.dao.HistoryDao
+import com.nesa.core.storage.dao.LifeScheduleDao
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
 import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.LifeScheduleEntity
 import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.ScheduleEntryEntity
 import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
 import com.nesa.core.storage.entity.WorkoutRoutineEntity
@@ -39,9 +42,11 @@ import com.nesa.core.storage.entity.WorkoutSessionEntity
         WorkoutRoutineEntity::class,
         RoutineExerciseEntity::class,
         WorkoutSessionEntity::class,
-        SetLogEntity::class
+        SetLogEntity::class,
+        LifeScheduleEntity::class,
+        ScheduleEntryEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class NesaDatabase : RoomDatabase() {
@@ -50,6 +55,7 @@ abstract class NesaDatabase : RoomDatabase() {
     abstract fun alarmDao(): AlarmDao
     abstract fun historyDao(): HistoryDao
     abstract fun fitnessDao(): FitnessDao
+    abstract fun lifeScheduleDao(): LifeScheduleDao
 
     companion object {
         const val NAME: String = "nesa.db"

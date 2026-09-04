@@ -12,6 +12,8 @@ import com.nesa.core.model.Exercise
 import com.nesa.core.model.ExerciseKind
 import com.nesa.core.model.Flexibility
 import com.nesa.core.model.Goal
+import com.nesa.core.model.LifeSchedule
+import com.nesa.core.model.LifeScheduleKind
 import com.nesa.core.model.GoalCategory
 import com.nesa.core.model.GoalStatus
 import com.nesa.core.model.NesaModule
@@ -21,6 +23,7 @@ import com.nesa.core.model.Recurrence
 import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.RoutineExercise
 import com.nesa.core.model.ScheduleBlock
+import com.nesa.core.model.ScheduleEntry
 import com.nesa.core.model.SetLog
 import com.nesa.core.model.SetOutcome
 import com.nesa.core.model.SnoozePolicy
@@ -34,8 +37,10 @@ import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
 import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.LifeScheduleEntity
 import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.ScheduleEntryEntity
 import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
 import com.nesa.core.storage.entity.WorkoutRoutineEntity
@@ -374,4 +379,55 @@ fun WorkoutSession.toEntity(): WorkoutSessionEntity = WorkoutSessionEntity(
     effort = effort.name,
     notes = notes,
     recordedAtEpochMillis = recordedAt.toEpochMilli()
+)
+
+// --- Life schedules ---------------------------------------------------------
+
+/**
+ * Rebuilds an entry, repairing a row rather than throwing on it.
+ *
+ * `ScheduleEntry` rejects an entry that happens on no day and one with no
+ * duration, which is right for code constructing one and wrong here: a row that
+ * could crash the schedules screen is a worse outcome than a row that reads as
+ * a Monday. The repair is visible and editable; a crash is neither.
+ */
+fun ScheduleEntryEntity.toDomain(): ScheduleEntry {
+    val parsed = days.split(',')
+        .mapNotNull { name -> DayOfWeek.entries.firstOrNull { it.name == name.trim() } }
+        .toSet()
+    return ScheduleEntry(
+        id = id,
+        title = title.ifBlank { "Untitled" },
+        days = parsed.ifEmpty { setOf(DayOfWeek.MONDAY) },
+        start = DayWindow.timeOf(startMinute),
+        duration = Duration.ofMinutes(durationMinutes.toLong().coerceAtLeast(1L)),
+        priority = priority.toEnum(Priority.NORMAL),
+        flexibility = flexibility.toEnum(Flexibility.TIME_FLEXIBLE)
+    )
+}
+
+fun ScheduleEntry.toEntity(scheduleId: String): ScheduleEntryEntity = ScheduleEntryEntity(
+    id = id,
+    scheduleId = scheduleId,
+    title = title,
+    days = days.joinToString(",") { it.name },
+    startMinute = DayWindow.minuteOf(start),
+    durationMinutes = durationMinutes,
+    priority = priority.name,
+    flexibility = flexibility.name
+)
+
+fun LifeScheduleEntity.toDomain(entries: List<ScheduleEntryEntity>): LifeSchedule = LifeSchedule(
+    id = id,
+    name = name.ifBlank { "Schedule" },
+    kind = kind.toEnum(LifeScheduleKind.CUSTOM),
+    enabled = enabled,
+    entries = entries.map { it.toDomain() }
+)
+
+fun LifeSchedule.toEntity(): LifeScheduleEntity = LifeScheduleEntity(
+    id = id,
+    name = name,
+    kind = kind.name,
+    enabled = enabled
 )

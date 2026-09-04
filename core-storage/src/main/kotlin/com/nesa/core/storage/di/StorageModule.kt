@@ -6,6 +6,7 @@ import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.model.repository.FitnessRepository
 import com.nesa.core.model.repository.GoalRepository
+import com.nesa.core.model.repository.LifeScheduleRepository
 import com.nesa.core.model.repository.HistoryRepository
 import com.nesa.core.storage.NesaDatabase
 import com.nesa.core.storage.NesaMigrations
@@ -13,11 +14,13 @@ import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
 import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
+import com.nesa.core.storage.dao.LifeScheduleDao
 import com.nesa.core.storage.dao.HistoryDao
 import com.nesa.core.storage.repository.RoomActivityRepository
 import com.nesa.core.storage.repository.RoomAlarmRepository
 import com.nesa.core.storage.repository.RoomFitnessRepository
 import com.nesa.core.storage.repository.RoomGoalRepository
+import com.nesa.core.storage.repository.RoomLifeScheduleRepository
 import com.nesa.core.storage.repository.RoomHistoryRepository
 import dagger.Binds
 import dagger.Module
@@ -54,6 +57,9 @@ object DatabaseModule {
 
     @Provides
     fun provideFitnessDao(database: NesaDatabase): FitnessDao = database.fitnessDao()
+
+    @Provides
+    fun provideLifeScheduleDao(database: NesaDatabase): LifeScheduleDao = database.lifeScheduleDao()
 }
 
 /** Binds the domain's repository contracts to their Room implementations. */
@@ -80,4 +86,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindFitnessRepository(impl: RoomFitnessRepository): FitnessRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLifeScheduleRepository(
+        impl: RoomLifeScheduleRepository
+    ): LifeScheduleRepository
 }

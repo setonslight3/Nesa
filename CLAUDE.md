@@ -23,7 +23,8 @@ code and the specification disagree, the code is wrong.
 | 4 — Intelligence | AIProvider abstraction, Gemini adapter, typed commands, granular permissions, voice |
 | 5 — Personalize | Themes, custom colours, backgrounds, widgets, advanced personalization, polish |
 
-Stage 1 is implemented. **Stage 2 (Life) is in progress.** Fitness is built but
+Stage 1 is implemented. **Stage 2 (Life) is feature-complete and has not yet
+passed its gate.** Fitness is built but
 belongs to Stage 3 — see `docs/roadmap.md` for why it was not reverted. Do not
 implement a later stage's features early. A small architectural hook is
 acceptable; a half-built feature is not.
@@ -130,6 +131,9 @@ reimplementing the decision:
 | Turning silence into MISSED | `MissedActivityDetector`, via `DayPlanner` |
 | What happens to an alarm next | `NesaAlarmCoordinator` |
 | Training figures (streak, volume, rest) | `WorkoutProgress` (pure object) |
+| Closing a day and recovering it | `NightReview` (pure object) |
+| Daily/weekly figures | `PlanStatistics` (pure object) |
+| A schedule's activities | `LifeScheduleApplier` (derived ids, idempotent) |
 
 This is why a tap on a notification and a tap on the timeline cannot drift apart,
 and it is the shape Stage 4's AI command validator will need: AI proposes
@@ -186,7 +190,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 155 unit tests over the scheduler, the state
+The domain modules carry the weight: 166 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.

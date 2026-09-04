@@ -10,6 +10,8 @@ import com.nesa.feature.alarm.alarmGraph
 import com.nesa.feature.fitness.FitnessRoutes
 import com.nesa.feature.fitness.fitnessGraph
 import com.nesa.feature.fitness.routineEditorGraph
+import com.nesa.feature.life.LifeRoutes
+import com.nesa.feature.life.lifeGraph
 import com.nesa.feature.onboarding.OnboardingRoutes
 import com.nesa.feature.onboarding.onboardingGraph
 import com.nesa.feature.settings.SettingsRoutes
@@ -60,7 +62,8 @@ fun NesaNavHost(
         settingsGraph(
             onBack = { navController.popBackStack() },
             onOpenAlarm = { navController.navigate(AlarmRoutes.SETTINGS) },
-            onOpenFitness = { navController.navigate(FitnessRoutes.ROOT) }
+            onOpenFitness = { navController.navigate(FitnessRoutes.ROOT) },
+            onOpenLife = { navController.navigate(LifeRoutes.ROOT) }
         )
 
         fitnessGraph(
@@ -72,6 +75,15 @@ fun NesaNavHost(
         )
 
         routineEditorGraph(onDone = { navController.popBackStack() })
+
+        lifeGraph(
+            onBack = { navController.popBackStack() },
+            onEditSchedule = { scheduleId ->
+                navController.navigate(LifeRoutes.editSchedule(scheduleId))
+            },
+            onOpenReview = { navController.navigate(LifeRoutes.REVIEW) },
+            onOpenStatistics = { navController.navigate(LifeRoutes.STATISTICS) }
+        )
     }
 }
 
@@ -81,4 +93,5 @@ object NesaDestinations {
     const val SETTINGS = SettingsRoutes.ROOT
     const val ALARM = AlarmRoutes.SETTINGS
     const val FITNESS = FitnessRoutes.ROOT
+    const val LIFE = LifeRoutes.ROOT
 }

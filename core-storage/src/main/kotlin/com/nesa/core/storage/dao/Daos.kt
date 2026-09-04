@@ -9,8 +9,10 @@ import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
 import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.LifeScheduleEntity
 import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.ScheduleEntryEntity
 import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
 import com.nesa.core.storage.entity.WorkoutRoutineEntity
@@ -252,5 +254,56 @@ interface FitnessDao {
         upsertSession(session)
         clearSetLogs(session.id)
         if (logs.isNotEmpty()) upsertSetLogs(logs)
+    }
+}
+
+/**
+ * Life schedules.
+ *
+ * A schedule and its entries are written together, as a transaction: a schedule
+ * that saved its header and lost its entries would be a work week the user
+ * thought they had configured.
+ */
+@Dao
+interface LifeScheduleDao {
+
+    @Query("SELECT * FROM life_schedules ORDER BY name ASC")
+    fun observeSchedules(): Flow<List<LifeScheduleEntity>>
+
+    @Query("SELECT * FROM schedule_entries ORDER BY startMinute ASC, title ASC")
+    fun observeAllEntries(): Flow<List<ScheduleEntryEntity>>
+
+    @Query("SELECT * FROM life_schedules")
+    suspend fun schedules(): List<LifeScheduleEntity>
+
+    @Query("SELECT * FROM life_schedules WHERE id = :scheduleId")
+    suspend fun schedule(scheduleId: String): LifeScheduleEntity?
+
+    @Query("SELECT * FROM schedule_entries WHERE scheduleId = :scheduleId ORDER BY startMinute ASC")
+    suspend fun entries(scheduleId: String): List<ScheduleEntryEntity>
+
+    @Query("SELECT * FROM schedule_entries")
+    suspend fun allEntries(): List<ScheduleEntryEntity>
+
+    @Upsert
+    suspend fun upsertSchedule(schedule: LifeScheduleEntity)
+
+    @Upsert
+    suspend fun upsertEntries(entries: List<ScheduleEntryEntity>)
+
+    @Query("DELETE FROM schedule_entries WHERE scheduleId = :scheduleId")
+    suspend fun clearEntries(scheduleId: String)
+
+    @Query("DELETE FROM life_schedules WHERE id = :scheduleId")
+    suspend fun deleteSchedule(scheduleId: String)
+
+    @Transaction
+    suspend fun saveSchedule(schedule: LifeScheduleEntity, entries: List<ScheduleEntryEntity>) {
+        upsertSchedule(schedule)
+        // Replaced wholesale rather than merged, so an entry the user deleted
+        // actually disappears. Diffing rows is exactly the kind of thing that
+        // goes subtly wrong.
+        clearEntries(schedule.id)
+        if (entries.isNotEmpty()) upsertEntries(entries)
     }
 }

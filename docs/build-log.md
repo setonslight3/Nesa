@@ -7,6 +7,29 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — Stage 2 (Life) complete: schedules, review and statistics screens
+
+- `LifeSchedule` / `ScheduleEntry` / `LifeScheduleApplier` / `LifeSchedulePresets`
+  — work, school, training, prayer and meals as independently switchable
+  recurring schedules. Generated activity ids are derived (`life:<schedule>:<entry>`)
+  so applying is idempotent and removal is exact. 11 tests.
+- New **`:feature-life`** module (added to `settings.gradle.kts` and `:app`) with
+  four screens: schedules, schedule editor, night review, statistics.
+- `ActivityRepository.saveActivity(activity)` — saves a recurring activity with
+  no block of its own, since `RecurrenceMaterialiser` derives its blocks.
+- **Schema 5 → 6**: `life_schedules` and `schedule_entries`.
+
+Expect **166 domain tests**.
+
+**This build carries two unverified migrations, `4 → 5` and `5 → 6`.** `4 → 5`
+was pushed in `9cdd2ad` and no build has run since. If Room rejects either with
+an "expected/found" schema dump, paste it here rather than fixing it — the DDL
+is hand-written and matching it to Room's expectation is a Claude change. Expect
+new `schemas/…/5.json` and `6.json`.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## Pending — Stage 2 (Life): night review, statistics, and a stage correction
 
 The three specification documents are now in `docs/spec/`, extracted verbatim.

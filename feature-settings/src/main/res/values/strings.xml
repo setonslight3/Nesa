@@ -64,6 +64,7 @@
     <string name="settings_reliability_test_failed">Could not arm a test alarm. Set an alarm time first.</string>
 
     <string name="settings_modules_title">Modules</string>
+    <string name="settings_life_open">Life — schedules, review, statistics</string>
     <string name="settings_fitness">Fitness</string>
     <string name="settings_fitness_support">Workout routines, session logging and how your training week is going. Off unless you want it — nothing about fitness appears anywhere while this is off.</string>
     <string name="settings_fitness_open">Open fitness</string>

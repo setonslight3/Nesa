@@ -69,6 +69,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenAlarm: () -> Unit,
     onOpenFitness: () -> Unit,
+    onOpenLife: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -219,6 +220,14 @@ fun SettingsScreen(
 
             HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
             SectionHeader(title = stringResource(R.string.settings_modules_title))
+
+            // Life is always reachable rather than switch-gated: its individual
+            // schedules are what the user turns on and off, and a module with
+            // nothing enabled in it already shows nothing.
+            NavigationRow(
+                title = stringResource(R.string.settings_life_open),
+                onClick = onOpenLife
+            )
 
             SwitchRow(
                 title = stringResource(R.string.settings_fitness),

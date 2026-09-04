@@ -7,6 +7,7 @@ import com.nesa.core.model.CompletionRecord
 import com.nesa.core.model.DayWindow
 import com.nesa.core.model.Exercise
 import com.nesa.core.model.Goal
+import com.nesa.core.model.LifeSchedule
 import com.nesa.core.model.GuidancePersonality
 import com.nesa.core.model.NesaSettings
 import com.nesa.core.model.PlannedActivity
@@ -48,6 +49,15 @@ interface ActivityRepository {
 
     /** Creates or replaces an activity together with its placement. */
     suspend fun save(activity: Activity, block: ScheduleBlock)
+
+    /**
+     * Creates or replaces an activity with no placement of its own.
+     *
+     * For a recurring activity, whose blocks are derived: `RecurrenceMaterialiser`
+     * creates one on each day the rule matches. Writing a block here as well
+     * would give today two of them.
+     */
+    suspend fun saveActivity(activity: Activity)
 
     /** Adds placements the recurrence rules say a day is missing. */
     suspend fun addBlocks(blocks: List<ScheduleBlock>)
@@ -127,4 +137,20 @@ interface FitnessRepository {
     suspend fun sessions(from: LocalDate, to: LocalDate): List<WorkoutSession>
     suspend fun logSession(session: WorkoutSession)
     suspend fun deleteSession(sessionId: String)
+}
+
+/**
+ * The Life module's schedules.
+ *
+ * Separate from [ActivityRepository] because a schedule is a *description* the
+ * user maintains, and the activities it implies are a consequence of it. Keeping
+ * the two apart is what lets "change Work from five days to four" be one edit
+ * rather than a hunt through generated rows.
+ */
+interface LifeScheduleRepository {
+    fun observeSchedules(): Flow<List<LifeSchedule>>
+    suspend fun schedules(): List<LifeSchedule>
+    suspend fun schedule(scheduleId: String): LifeSchedule?
+    suspend fun save(schedule: LifeSchedule)
+    suspend fun delete(scheduleId: String)
 }

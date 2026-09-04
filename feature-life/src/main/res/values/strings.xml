@@ -1,0 +1,62 @@
+<resources>
+    <string name="life_title">Life</string>
+    <string name="life_review">Tonight\'s review</string>
+    <string name="life_statistics">Your week</string>
+    <string name="life_schedules">Schedules</string>
+    <string name="life_no_schedules">No schedules yet. A schedule is the recurring shape of your week — work, school, training, prayer, meals. Add the ones you want and leave the rest.</string>
+    <string name="life_add">Add a schedule</string>
+    <string name="life_edit">Edit</string>
+    <string name="life_delete">Delete</string>
+    <string name="life_schedule_empty">Nothing in it yet.</string>
+    <string name="life_entry_summary">%1$s · %2$s · %3$s</string>
+
+    <string name="kind_work">Work</string>
+    <string name="kind_school">School</string>
+    <string name="kind_training">Training</string>
+    <string name="kind_prayer">Prayer</string>
+    <string name="kind_meal">Meals</string>
+    <string name="kind_custom">Something else</string>
+
+    <string name="schedule_title">Schedule</string>
+    <string name="schedule_name">Name</string>
+    <string name="schedule_name_error">Give the schedule a name</string>
+    <string name="schedule_enabled">Use this schedule</string>
+    <string name="schedule_enabled_support">While this is off, nothing from it appears on your timeline. Turning it off keeps the schedule — it does not delete it.</string>
+    <string name="schedule_entries">What happens, and when</string>
+    <string name="schedule_no_entries">Nothing yet. Add the times that repeat each week.</string>
+    <string name="schedule_entry_title">Name</string>
+    <string name="schedule_entry_start">Starts at</string>
+    <string name="schedule_entry_length">Length: %1$d min</string>
+    <string name="schedule_add_entry">Add a time</string>
+    <string name="schedule_remove_entry">Remove</string>
+    <string name="schedule_save">Save schedule</string>
+    <string name="schedule_confirm">Set</string>
+    <string name="schedule_cancel">Cancel</string>
+
+    <string name="review_title">Tonight\'s review</string>
+    <string name="review_summary">%1$d of %2$d done today</string>
+    <string name="review_settled">Nothing left hanging. That is a finished day.</string>
+    <string name="review_skipped">%1$d you decided to skip. That is a choice, not a miss.</string>
+    <string name="review_moved">NESA moved these</string>
+    <string name="review_moved_item">%1$s · %2$s</string>
+    <string name="review_open">Still open</string>
+    <string name="review_tomorrow">Tomorrow is already holding</string>
+    <string name="review_accept">Do that</string>
+    <string name="review_not_today">Not this one</string>
+    <string name="review_later_today">There is still room today, at %1$s.</string>
+    <string name="review_tomorrow_at">Tomorrow at %1$s looks free.</string>
+    <string name="review_let_go">Optional, and the day got away. Letting this one go is fine.</string>
+    <string name="review_unavailable">The review could not be built just now.</string>
+
+    <string name="stats_title">Your week</string>
+    <string name="stats_empty">Nothing logged yet. Finish or skip a few activities and this fills in.</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_today_line">%1$d of %2$d done</string>
+    <string name="stats_week">This week</string>
+    <string name="stats_last_week">Last week</string>
+    <string name="stats_week_line">%1$d done · %2$d%% of what you attempted</string>
+    <string name="stats_day_line">%1$d done · %2$d missed · %3$d skipped</string>
+    <string name="stats_best_day">Best day: %1$s, %2$d done.</string>
+    <string name="stats_streak">%1$d days in a row with something finished.</string>
+    <string name="stats_skip_note">Skipping something on purpose does not count against you. Only what you meant to do and did not is counted as missed.</string>
+</resources>

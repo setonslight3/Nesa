@@ -65,15 +65,32 @@ recovery/rescheduling, and daily review tested.*
   completion denominator, so deciding to clear a bad day does not count against
   the user. Nine tests.
 
-### Not built
+- **Life schedules** — `LifeSchedule` and `ScheduleEntry` in the domain,
+  `LifeScheduleApplier` turning one into ordinary activities carrying a weekly
+  `Recurrence`, and `LifeSchedulePresets` for work, school, training, prayer and
+  meals. Every schedule switches on and off independently, and presets arrive
+  switched **off**. Eleven tests.
+- **`feature-life`** — the module the blueprint names (§4). Schedules list,
+  schedule editor, night review and statistics screens.
 
-- **Work / school / training schedules.** Named, optional routines that generate
-  recurring activities — the recurrence engine exists, the concept of a named
-  schedule does not.
-- **Prayer module, optional.** Fixed daily times, treated as anchors.
-- **Meals, optional.**
-- **A `feature-life` module** to host the night review, statistics and the above.
-  The blueprint names it (§4); it does not exist yet.
+Stage 2 is now feature-complete against the specification. **Its gate has not
+been run** — see `verification.md`.
+
+### Judgement calls worth knowing about
+
+- **The prayer preset is empty.** Times differ by tradition, location and
+  season; a preset filled with one tradition's schedule would presume something
+  this product has no business presuming. The screen invites the user to add
+  their own, and prayer entries default to CRITICAL and FIXED so the rest of the
+  day is arranged around them.
+- **Generated activity ids are derived, not random** —
+  `life:<scheduleId>:<entryId>`. That is what makes applying a schedule
+  idempotent (no second "Work" every Monday) and removing one exact (an activity
+  the user made by hand and called "Work" is never caught by a schedule's
+  cleanup).
+- **Life is not behind a master switch**, unlike fitness. Its individual
+  schedules are what the user enables, and a module with nothing enabled already
+  shows nothing.
 
 ## Stages 3–5
 

@@ -230,3 +230,37 @@ data class SetLogEntity(
     val weightKg: Double?,
     val outcome: String
 )
+
+// --- Life schedules (schema 6) ----------------------------------------------
+
+@Entity(tableName = "life_schedules")
+data class LifeScheduleEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val kind: String,
+    val enabled: Boolean
+)
+
+@Entity(
+    tableName = "schedule_entries",
+    foreignKeys = [
+        ForeignKey(
+            entity = LifeScheduleEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["scheduleId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("scheduleId")]
+)
+data class ScheduleEntryEntity(
+    @PrimaryKey val id: String,
+    val scheduleId: String,
+    val title: String,
+    /** Comma-separated DayOfWeek names. Never empty; the domain rejects that. */
+    val days: String,
+    val startMinute: Int,
+    val durationMinutes: Int,
+    val priority: String,
+    val flexibility: String
+)

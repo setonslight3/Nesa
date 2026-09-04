@@ -69,6 +69,13 @@ class FakeActivityRepository(initial: List<PlannedActivity> = emptyList()) : Act
         state.value = state.value.filterNot { it.block.id == block.id } + PlannedActivity(activity, block)
     }
 
+    override suspend fun saveActivity(activity: Activity) {
+        known[activity.id] = activity
+        state.value = state.value.map { item ->
+            if (item.activity.id == activity.id) item.copy(activity = activity) else item
+        }
+    }
+
     override suspend fun addBlocks(blocks: List<ScheduleBlock>) {
         val added = blocks.mapNotNull { block ->
             known[block.activityId]?.let { PlannedActivity(it, block) }
