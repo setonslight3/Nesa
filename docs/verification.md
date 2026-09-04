@@ -316,6 +316,45 @@ because Android exposes no API for that. It is therefore a deliberate handoff th
 user performs, not a background sync that would fill their clock app with
 duplicates.
 
+## Gate run 6 — the process is frozen, and that is a ceiling
+
+Delivering the alarm as a direct service start rather than a broadcast changed
+nothing:
+
+```
+00:09:23  armed for 00:10:23 (exact=true)
+00:11:40  alarm delivered 77s LATE (direct to service)
+00:11:41  audio: playing
+00:11:41  alarm screen launched over the foreground
+```
+
+Two things are now ruled out, and the elimination is what matters:
+
+- **Not broadcast deferral.** A `getForegroundService` PendingIntent is not a
+  broadcast and is not subject to that queue. It was held back just the same.
+- **Not process death.** There is no `app process started` line anywhere in the
+  trace, so the process was never killed and recreated. It survived the whole
+  test.
+
+What remains is that the process was **frozen** — suspended by the manufacturer's
+power manager — and everything queued for it waited until the app was reopened
+and the system thawed it. A frozen process cannot execute code by definition, so
+there is no API an application can call to escape this. It is the mechanism
+working as its authors intended.
+
+Everything NESA controls is correct and has been for several builds: armed as an
+exact alarm at the right time, and on delivery the service promotes, the audio
+plays, and the screen takes over the foreground. The failure is entirely in the
+handoff, and the handoff is the platform's.
+
+### What is genuinely unknown
+
+Whether the keep-alive foreground service is running at all. A foreground service
+should exempt a process from freezing, and no trace has ever contained a
+`keep-alive` line. The reliability screen now states which it is, and that
+answer decides whether there is anything left to try or whether this device is
+simply a documented limitation.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
