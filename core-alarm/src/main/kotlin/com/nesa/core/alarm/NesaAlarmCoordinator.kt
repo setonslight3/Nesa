@@ -56,12 +56,14 @@ class NesaAlarmCoordinator @Inject constructor(
             scheduler.cancel(alarm.id)
             Log.i(TAG, "Saved ${alarm.id} disabled; nothing armed")
         }
+        refreshWatch()
     }
 
     suspend fun delete(alarmId: String) {
         scheduler.cancel(alarmId)
         sessions.clear(alarmId)
         alarms.delete(alarmId)
+        refreshWatch()
     }
 
     /** Re-arms every enabled alarm. Safe to call repeatedly. */
@@ -72,6 +74,7 @@ class NesaAlarmCoordinator @Inject constructor(
                 Log.w(TAG, "Alarm ${alarm.id} could not be armed; it will retry on the next trigger")
             }
         }
+        refreshWatch(from)
     }
 
     /**
@@ -91,7 +94,9 @@ class NesaAlarmCoordinator @Inject constructor(
 
         sessions.recordSnooze(alarmId)
         val at = NextAlarmCalculator.afterSnooze(alarm, now)
-        return if (scheduler.scheduleAt(alarm, at)) at else null
+        if (!scheduler.scheduleAt(alarm, at)) return null
+        refreshWatch(now, soonest = at)
+        return at
     }
 
     /**
@@ -109,7 +114,9 @@ class NesaAlarmCoordinator @Inject constructor(
         }
 
         sessions.recordRetry(alarmId)
-        return if (scheduler.scheduleAt(alarm, at)) at else null
+        if (!scheduler.scheduleAt(alarm, at)) return null
+        refreshWatch(now, soonest = at)
+        return at
     }
 
     /**
@@ -124,7 +131,9 @@ class NesaAlarmCoordinator @Inject constructor(
         val alarm = alarms.alarms().firstOrNull() ?: return null
         val at = ZonedDateTime.now().plusSeconds(secondsFromNow)
         Log.i(TAG, "Arming test alarm ${alarm.id} for $at")
-        return if (scheduler.scheduleAt(alarm, at)) at else null
+        if (!scheduler.scheduleAt(alarm, at)) return null
+        refreshWatch(soonest = at)
+        return at
     }
 
     /** True when the platform is still holding an alarm for the first alarm. */
@@ -144,6 +153,37 @@ class NesaAlarmCoordinator @Inject constructor(
         } else {
             scheduler.cancel(alarmId)
         }
+        refreshWatch()
+    }
+
+    /**
+     * Starts or stops the alarm watch to match what is now armed.
+     *
+     * The watch is what keeps NESA's process out of the manufacturer's cached-app
+     * freezer, which is what was delaying delivery by a minute and more on the
+     * test device; see [AlarmWatchService]. Every path that changes the schedule
+     * ends here, so "an alarm is armed" and "the watch is running" cannot drift
+     * apart — a watch running with nothing to protect is a notification the user
+     * did not earn, and an alarm armed with no watch is one that rings late.
+     *
+     * @param soonest a moment known to the caller that the repeating schedule
+     *   does not describe — a snooze or a retry, which sit between occurrences.
+     */
+    private suspend fun refreshWatch(
+        from: ZonedDateTime = ZonedDateTime.now(),
+        soonest: ZonedDateTime? = null
+    ) {
+        runCatching {
+            val upcoming = alarms.alarms()
+                .filter { it.enabled }
+                .mapNotNull { NextAlarmCalculator.next(it, from) }
+            // minByOrNull over the instant rather than minOrNull: ZonedDateTime
+            // is Comparable<ChronoZonedDateTime<*>>, not Comparable<ZonedDateTime>,
+            // so minOrNull widens the result type and stops compiling here.
+            scheduler.updateWatch(
+                (upcoming + listOfNotNull(soonest)).minByOrNull { it.toInstant() }
+            )
+        }.onFailure { Log.w(TAG, "Could not update the alarm watch", it) }
     }
 
     private companion object {

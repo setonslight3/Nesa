@@ -101,6 +101,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Turns the alarm watch on or off.
+     *
+     * The one reliability control that is NESA's own rather than the system's,
+     * which is why it is a switch here instead of a link out to a settings
+     * screen. See AlarmWatchService for what it buys and what it costs.
+     */
+    fun onAlarmWatchEnabledChanged(enabled: Boolean) = viewModelScope.launch {
+        reliability.setAlarmWatchEnabled(enabled)
+        reliabilityStatus.value = reliability.status()
+    }
+
     val systemAlarmAvailable: Boolean get() = systemAlarm.isAvailable
 
     /**

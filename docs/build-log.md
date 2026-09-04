@@ -7,6 +7,35 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — the alarm watch, and a correction to gate run 6
+
+Gate run 6 called the frozen process a platform ceiling. It is not: a Play Store
+alarm app rings on the same Infinix Smart 9 after being swiped out of Recents,
+with no permission setup at all. The correction and the reasoning are in
+docs/verification.md gate run 7 and docs/android-platform.md.
+
+Changed:
+
+- New `AlarmWatchService` — a foreground service that runs only while an alarm
+  is armed, with `android:stopWithTask="false"`. It holds no timer; AlarmManager
+  still owns the schedule. Its purpose is to keep the process out of the
+  cached-app freezer so delivery is not queued behind a thaw.
+- `NesaAlarmCoordinator.refreshWatch` — every path that changes the schedule
+  now ends there, so an armed alarm and a running watch cannot drift apart.
+- A "Keep NESA ready to ring" switch on the reliability screen, on by default.
+- `AlarmReceiver` is no longer `@AndroidEntryPoint`. Its ordinary path touches
+  no injected object; the graph is reached through a Hilt `@EntryPoint` only on
+  the fallback branch.
+- `AlarmEventLog.write(context, message)` — a static, DI-free write using
+  `commit()`, callable as a receiver's first statement.
+- The watch traces every outcome: switched off, refused, running, app swiped
+  from recents, stopped. The service this replaces could fail silently and did.
+
+No new tests: the change is entirely in the Android layer, which the domain
+suite does not reach. The existing 98 domain tests should be unaffected.
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## Pending — architecture audit against the alarm-clock spec
 
 Audited the alarm against a written specification for a proper Android

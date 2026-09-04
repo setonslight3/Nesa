@@ -318,6 +318,15 @@ private fun ReliabilitySection(
         onFix = { onOpen(viewModel.notificationSettingsIntent(packageName)) }
     )
 
+    // NESA's own switch, below the system grants, because it is the one line
+    // here the user owns outright.
+    SwitchRow(
+        title = stringResource(R.string.settings_reliability_watch),
+        supportingText = stringResource(R.string.settings_reliability_watch_support),
+        checked = reliability.alarmWatchEnabled,
+        onCheckedChange = viewModel::onAlarmWatchEnabledChanged
+    )
+
     // Whether the platform is actually holding the alarm. Permissions can all be
     // granted and the alarm still be gone, and only this tells them apart.
     val timeFormatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT) }

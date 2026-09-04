@@ -355,14 +355,105 @@ should exempt a process from freezing, and no trace has ever contained a
 answer decides whether there is anything left to try or whether this device is
 simply a documented limitation.
 
+## Gate run 7 — the ceiling was ours, not the device's
+
+Gate run 6 concluded that a frozen process is a platform ceiling with no API to
+escape it. **That conclusion was wrong, and this is the correction.**
+
+The evidence that overturned it: a third-party alarm app installed from the Play
+Store on the same Infinix Smart 9 rings correctly after being swiped out of
+Recents, and it asked for no permission setup at all. A device that will do that
+for one app will do it for NESA. So the difference is architectural, not a
+manufacturer limitation.
+
+### What the difference is
+
+The freezing diagnosis from gate run 6 still holds — the trace has no
+`app process started` line, so the process was alive and suspended, not killed.
+What was wrong was the claim that nothing can be done about it. A process with a
+running foreground service is not put in the cached-app freezer. That is the
+whole mechanism, and it is what every reliable third-party alarm app on Android
+is doing when it shows a quiet "next alarm" notice.
+
+Gate run 6 raised exactly this and called it "genuinely unknown": *whether the
+keep-alive foreground service is running at all… no trace has ever contained a
+`keep-alive` line.* The answer is more uncomfortable than that.
+`NesaKeepAliveService` **did** exist, the user did switch it on, and the alarm
+still arrived late — and it was then deleted in the previous commit for being
+the shape the build spec warned against. Two things about that are worth being
+precise on, because they decide whether this run is repeating a failed
+experiment:
+
+- It never once wrote `keep-alive: started` to the trace, although its
+  `onCreate` did exactly that. So there is no evidence it ever ran. Every one of
+  its start paths swallowed failure inside a bare `runCatching`, which means a
+  refused start and a start that was never attempted looked identical — and both
+  looked like the service simply not working.
+- It also never declared `android:stopWithTask="false"`. The documented default
+  is already `false`, but on a skin that treats swiping from Recents as a
+  near-force-stop, stating it is not redundant.
+
+So the previous attempt did not test this hypothesis; it tested a service that
+may never have started. The one this run adds cannot fail quietly: it records
+being switched off, being refused, starting, the app being swiped away, and
+being destroyed. Whatever happens next, the trace will name it.
+
+### What changed
+
+- **`AlarmWatchService`** — a foreground service that runs while, and only
+  while, an alarm is armed. It holds no timer and does no work; AlarmManager
+  still owns the schedule entirely. Its single purpose is to keep the process out
+  of the freezer so that AlarmManager's delivery is not queued behind a thaw.
+  `android:stopWithTask="false"` is what makes it survive the swipe.
+- **`NesaAlarmCoordinator.refreshWatch`** — every path that changes the schedule
+  ends here, so "an alarm is armed" and "the watch is running" cannot drift
+  apart.
+- **A switch in the reliability screen** — on by default, because the failure it
+  prevents is worse than one silent low-priority notification, but it is the
+  user's to turn off.
+- **`AlarmReceiver` is no longer an `@AndroidEntryPoint`.** It was, and it read
+  injected fields in its first few lines, which made Hilt build the entire
+  singleton graph before `onReceive` did anything. That is not the cause of a
+  77-second delay, but it sat between the platform waking NESA and NESA writing
+  down that it had been woken — so the trace could not distinguish "Android was
+  late" from "we were slow to look". The ordinary path now touches no injected
+  object at all; the graph is reached only on the fallback branch, which has
+  already failed by the time it runs.
+- **`AlarmEventLog.write(context, message)`** — a static, dependency-free write
+  that a receiver can call as its first statement, using `commit()` rather than
+  `apply()` so a receiver torn down immediately still leaves its trace.
+- **`onTaskRemoved` and `onDestroy` are traced.** The next trace can therefore
+  read `watch running` → `app swiped from recents` → `receiver fired on time`,
+  or show `watch stopped` at the moment the manufacturer killed it — which
+  answers the remaining question directly rather than by inference.
+
+### What this does not yet claim
+
+**Nothing here is verified.** It has not been compiled and it has not run on a
+phone. The build spec's rule stands: this is not fixed until the physical-device
+test succeeds. The test is the one below, and the trace decides:
+
+- `receiver fired on time` after `app swiped from recents` — fixed.
+- `watch stopped` before a late delivery — the manufacturer kills foreground
+  services too. The next thing to try would be running the alarm in its own
+  `android:process`, so that removing the UI task cannot touch it; that is a
+  real change (Room, Hilt and the event log all stop being single-process) and
+  is not worth attempting until the trace says it is needed. Failing that, the
+  honest answer is the handoff to the system clock app that already exists in
+  settings.
+- No `watch running` line at all — the service never started; the trace will say
+  whether the platform refused it.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take
 roughly ten minutes on a real phone.
 
-1. **Alarm.** Set one two minutes out, lock the screen, and wait. It should take
-   over the lock screen; the challenge should stop it and nothing else should.
-   *Closes 9, and the riskiest part of 8.*
+1. **Alarm.** Set one two minutes out, **swipe NESA out of Recents**, lock the
+   screen, and wait. It should take over the lock screen; the challenge should
+   stop it and nothing else should. Then reopen NESA and read the trace on the
+   reliability screen — it is the trace, not the ringing, that says which of the
+   three outcomes above happened. *Closes 9, and the riskiest part of 8.*
 2. **Alarm across a reboot.** Set one ten minutes out, restart the phone, and
    leave it. It should still fire. *This is the one most likely to fail on a
    manufacturer skin, and the one that matters most.*

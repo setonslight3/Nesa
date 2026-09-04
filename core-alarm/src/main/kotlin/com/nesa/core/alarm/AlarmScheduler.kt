@@ -10,6 +10,7 @@ import com.nesa.core.model.Alarm
 import com.nesa.core.scheduling.NextAlarmCalculator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -102,6 +103,23 @@ class AlarmScheduler @Inject constructor(
         }
     }
 
+    /**
+     * Keeps the alarm watch in step with what is actually armed.
+     *
+     * Called by [NesaAlarmCoordinator] after anything that changes the schedule,
+     * so the watch runs exactly while there is an alarm to protect and never a
+     * moment longer. See [AlarmWatchService] for why the watch is needed.
+     *
+     * @param next the soonest moment any alarm will ring, or null when none will.
+     */
+    fun updateWatch(next: ZonedDateTime?) {
+        if (next == null) {
+            AlarmWatchService.stop(context)
+        } else {
+            AlarmWatchService.start(context, next.toLocalTime().format(WATCH_TIME_FORMAT))
+        }
+    }
+
     fun cancel(alarmId: String) {
         alarmManager?.cancel(firePendingIntent(alarmId))
     }
@@ -188,5 +206,6 @@ class AlarmScheduler @Inject constructor(
         const val TAG = "NesaAlarmScheduler"
         const val SHOW_REQUEST_CODE = 1
         const val INEXACT_WINDOW_MILLIS = 5 * 60 * 1000L
+        val WATCH_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }

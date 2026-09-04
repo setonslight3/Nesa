@@ -34,6 +34,8 @@
     <string name="settings_reliability_exact">Allow exact alarms</string>
     <string name="settings_reliability_exact_support">Without this, the alarm can drift by several minutes.</string>
     <string name="settings_reliability_overlay">Allow display over other apps</string>
+    <string name="settings_reliability_watch">Keep NESA ready to ring</string>
+    <string name="settings_reliability_watch_support">Shows a silent notice while an alarm is set. Some phones freeze apps that are swiped out of Recents, and a frozen app does not get its alarm until you open it again — this is what stops that. Turn it off if your alarm already rings reliably.</string>
     <string name="settings_reliability_overlay_support">Android forbids apps from opening a screen while in the background. This permission is the exemption — without it NESA can only post a notification and hope you tap it, instead of showing the alarm itself.</string>
     <string name="settings_reliability_fullscreen">Allow full-screen alarms</string>
     <string name="settings_reliability_fullscreen_support">Android 14 made this a separate permission. Without it the alarm arrives as an ordinary notification instead of taking over the screen.</string>

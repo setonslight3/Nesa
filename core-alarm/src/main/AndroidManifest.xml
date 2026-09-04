@@ -73,6 +73,25 @@
                 android:value="Ringing a user-configured alarm clock until it is answered" />
         </service>
 
+        <!--
+          The alarm watch. See AlarmWatchService for why it exists at all.
+
+          stopWithTask="false" is the point of the whole thing: swiping NESA out
+          of the recents list must not take the service with it, because being
+          swiped away is exactly the moment the process would otherwise be
+          frozen and the alarm deferred. The default is already false, but this
+          is load-bearing enough to state rather than inherit.
+        -->
+        <service
+            android:name=".AlarmWatchService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeping the process resident so a user-configured alarm is delivered on time" />
+        </service>
+
         <receiver
             android:name=".AlarmReceiver"
             android:exported="false" />

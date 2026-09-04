@@ -6,7 +6,7 @@
     <string name="nesa_channel_review_name">Daily review</string>
     <string name="nesa_channel_review_description">The evening and night summary of your day.</string>
     <string name="nesa_channel_service_name">Background work</string>
-    <string name="nesa_channel_service_description">Quiet notice shown while an alarm is ringing.</string>
+    <string name="nesa_channel_service_description">Quiet notice shown while an alarm is ringing or waiting to ring.</string>
 
     <string name="nesa_action_complete">Done</string>
     <string name="nesa_action_later">Do later</string>
@@ -17,4 +17,5 @@
     <string name="nesa_alarm_label_default">Alarm</string>
     <string name="nesa_keep_alive_title">NESA is ready</string>
     <string name="nesa_keep_alive_text">Keeping your alarms working on this phone.</string>
+    <string name="nesa_keep_alive_next">Next alarm at %1$s</string>
 </resources>

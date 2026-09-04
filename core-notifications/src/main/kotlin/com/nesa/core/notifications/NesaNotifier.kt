@@ -125,6 +125,36 @@ class NesaNotifier @Inject constructor(
     }
 
     /**
+     * The quiet notice shown while an alarm is waiting to ring.
+     *
+     * This is the foreground-service notification for [com.nesa.core.alarm]'s
+     * alarm watch, and it is deliberately the *only* thing that service does.
+     * Low importance, silent, no full-screen intent: it is a statement that an
+     * alarm is set, not an alert. It carries the alarm's time so the user can
+     * see at a glance that NESA has the morning covered.
+     */
+    fun buildWatchNotification(nextLabel: String?): Notification {
+        ensureChannels()
+        return NotificationCompat.Builder(context, NesaChannels.SERVICE)
+            .setSmallIcon(R.drawable.ic_nesa_notification)
+            .setContentTitle(context.getString(R.string.nesa_keep_alive_title))
+            .setContentText(
+                if (nextLabel != null) {
+                    context.getString(R.string.nesa_keep_alive_next, nextLabel)
+                } else {
+                    context.getString(R.string.nesa_keep_alive_text)
+                }
+            )
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setSilent(true)
+            .setContentIntent(openAppIntent())
+            .build()
+    }
+
+    /**
      * Posts the alarm notification directly, without a foreground service.
      *
      * This is the fallback path for Android 12 and later, which forbids starting
@@ -168,6 +198,10 @@ class NesaNotifier @Inject constructor(
          * background fallback are the same notification, not two competing ones.
          */
         const val RINGER_NOTIFICATION_ID: Int = 1001
+
+        /** Distinct from the ringer, so the watch is not cancelled when an
+         *  alarm finishes ringing and the ringer notification is removed. */
+        const val WATCH_NOTIFICATION_ID: Int = 1002
     }
 
     private fun actionIntent(blockId: String, action: ActivityAction): PendingIntent {

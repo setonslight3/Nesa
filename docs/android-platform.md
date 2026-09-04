@@ -41,10 +41,10 @@ working is the one failure this product cannot afford.
 Android 14 requires a `foregroundServiceType` on every foreground service, and
 none of the standard types describes an alarm clock.
 
-**What NESA does.** `AlarmRingerService` declares `specialUse` with an explicit
-justification property, which is what the platform asks for in exactly this
-situation. A Play Store submission will need that justification restated in the
-console.
+**What NESA does.** `AlarmRingerService` and `AlarmWatchService` both declare
+`specialUse` with an explicit justification property, which is what the platform
+asks for in exactly this situation. A Play Store submission will need those
+justifications restated in the console.
 
 ## A foreground service must announce itself within five seconds
 
@@ -72,26 +72,67 @@ for itself.
 This is why the inexact fallback matters more than it first appears: losing exact
 alarms also loses the exemption that lets the ringer start at all.
 
-## Broadcasts to a frozen app are deferred
+## A frozen process gets nothing until something thaws it
 
-Android holds broadcasts destined for an app it has frozen or cached, delivering
-them when something else wakes the process. On a stock phone this rarely matters;
-on one that freezes an app the moment it leaves the screen, it means an alarm
-sent as a broadcast simply waits.
+Android holds everything destined for a process it has frozen or cached —
+broadcasts included — and delivers it when something wakes the process. On a
+stock phone this rarely matters. On a phone that freezes an app the moment it
+leaves the recents list, an alarm simply waits for the user to open the app,
+which is the one thing an alarm cannot depend on.
 
-A Transsion device showed this exactly: armed for 23:34:40, delivered at
-23:35:25 — the moment the user reopened the app. Every step after delivery was
-already correct, so the fault was entirely in getting the alarm through the door.
+A Transsion device (Infinix Smart 9, XOS) showed this repeatedly. Armed at
+00:09:23 for 00:10:23, delivered at 00:11:40 — 77 seconds late, at the exact
+moment the app was reopened. The trace contained no `app process started` line,
+so the process had not been killed and recreated; it was alive and suspended.
 
-**What NESA does.** `AlarmScheduler` schedules a PendingIntent that starts
-`AlarmRingerService` directly, via `PendingIntent.getForegroundService`, rather
-than a broadcast. A service start is not a broadcast and is not subject to that
-queue. An exact alarm separately exempts the start from the usual ban on
-launching a foreground service from the background, so the two mechanisms
-complement each other.
+Three things were tried and did not help, and the eliminations are worth keeping:
 
-The receiver's old safety net moved with it: if the service cannot become a
-foreground service, it posts the full-screen notification itself before stopping.
+- **A direct `PendingIntent.getForegroundService` instead of a broadcast.** A
+  service start is not a broadcast and is not subject to the broadcast queue. It
+  was held back by the same amount, so the deferral is not broadcast-specific.
+  Reverted; the standard receiver is the better architecture.
+- **Every permission.** Exact alarms, battery-optimisation exemption, overlay,
+  auto-start and full-screen intent were all granted for that trace. Freezing is
+  a process state, not a permission, so no grant addresses it.
+- **`setAlarmClock`.** The strongest guarantee AlarmManager offers, and the
+  alarm did reach the platform — `nextAlarmClock` confirmed it. The platform
+  held its side of the bargain; the delivery is what waited.
+
+**What NESA does.** `AlarmWatchService` — a foreground service that runs while,
+and only while, an alarm is armed. A process with a running foreground service
+is not put in the cached-app freezer, which is the entire mechanism. It holds no
+timer and performs no work; AlarmManager still owns the schedule. It shows a
+silent, low-priority notice naming the time of the alarm it is protecting, and
+`android:stopWithTask="false"` is what keeps it alive across the swipe that
+would otherwise trigger the freeze.
+
+This is the architecture every reliable third-party alarm app on Android uses,
+and it is why one downloaded from the Play Store rings on the same phone with no
+permission setup: the quiet "next alarm" notification such apps show *is* the
+foreground service. The build spec's instruction not to keep a permanent
+foreground service "merely to keep the alarm alive" was written on the suspicion
+that NESA was using an in-process timer rather than AlarmManager. It is not —
+and keeping the process thawed so the platform's own delivery arrives on time is
+a different thing from keeping a timer running.
+
+It is bounded (it stops when no alarm is armed), honest (it says what it is
+protecting), and optional (a switch on the reliability screen turns it off). If
+the device kills it anyway, the alarm still fires — it fires late, which is the
+behaviour without it. `onTaskRemoved` and `onDestroy` both write to the alarm
+trace, so a device that kills the watch says so rather than leaving it to be
+inferred.
+
+**A receiver must also be cheap to start.** `AlarmReceiver` is deliberately not
+an `@AndroidEntryPoint`. Injected fields make Hilt build the whole singleton
+graph — Room, DataStore, WorkManager — before `onReceive` runs its first
+statement, and on the delivery path that sits between the platform waking NESA
+and NESA noticing. The ordinary path now touches no injected object; the
+dependency graph is reached through a Hilt `@EntryPoint` only on the fallback
+branch, which has already failed by then.
+
+The receiver's safety net remains: if the ringer cannot become a foreground
+service, a full-screen notification is posted instead, which the platform always
+permits.
 
 ## An app may not open a screen from the background
 

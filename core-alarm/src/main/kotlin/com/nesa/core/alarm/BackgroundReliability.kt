@@ -39,7 +39,15 @@ data class ReliabilityStatus(
     /** Whether the platform is still holding NESA's alarm right now. */
     val alarmArmed: Boolean = false,
     /** The next alarm clock the system knows about, from any app. */
-    val nextSystemAlarmMillis: Long? = null
+    val nextSystemAlarmMillis: Long? = null,
+    /**
+     * Whether the alarm watch is allowed to run.
+     *
+     * Unlike everything above it, this is NESA's own choice rather than a
+     * platform grant — so it is not part of [isFullyReliable]. A user who turns
+     * it off on a device that does not need it is not misconfigured.
+     */
+    val alarmWatchEnabled: Boolean = true
 ) {
     /** True when no permission is standing in the way of a dependable alarm. */
     val isFullyReliable: Boolean
@@ -66,6 +74,25 @@ class BackgroundReliability @Inject constructor(
     private val events: AlarmEventLog
 ) {
 
+    /**
+     * Whether NESA keeps a quiet foreground notice up while an alarm is armed.
+     *
+     * See [AlarmWatchService]: on devices that freeze an app when it leaves the
+     * recents list, this is the difference between an alarm that rings and one
+     * that rings when the user next opens the app. It is on by default and
+     * turning it off is a deliberate choice, not a default worth defending.
+     */
+    fun isAlarmWatchEnabled(): Boolean = AlarmWatchService.isEnabled(context)
+
+    /**
+     * Turns the watch on or off, and makes the change take effect immediately
+     * rather than at the next time an alarm happens to be saved.
+     */
+    suspend fun setAlarmWatchEnabled(enabled: Boolean) {
+        AlarmWatchService.setEnabled(context, enabled)
+        if (enabled) coordinator.rearmAll()
+    }
+
     /** The alarm's own account of what it did, oldest first. */
     fun recentEvents(): List<String> = events.recent()
 
@@ -78,7 +105,8 @@ class BackgroundReliability @Inject constructor(
         canAppearOverOtherApps = canAppearOverOtherApps(),
         canUseFullScreenIntent = notifier.canUseFullScreenIntent,
         alarmArmed = coordinator.isPrimaryAlarmArmed(),
-        nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis()
+        nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis(),
+        alarmWatchEnabled = isAlarmWatchEnabled()
     )
 
     /** Arms the real alarm a minute out, through the real path. */
