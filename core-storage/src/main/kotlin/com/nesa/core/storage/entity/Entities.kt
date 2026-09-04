@@ -135,3 +135,96 @@ data class ActivityWithBlocks(
     @androidx.room.Relation(parentColumn = "id", entityColumn = "activityId")
     val blocks: List<ScheduleBlockEntity>
 )
+
+// --- Fitness (schema 4) -----------------------------------------------------
+
+@Entity(tableName = "exercises")
+data class ExerciseEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val kind: String,
+    val notes: String?
+)
+
+@Entity(tableName = "workout_routines")
+data class WorkoutRoutineEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val focus: String?,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long
+)
+
+/**
+ * A routine's exercises, as rows rather than a serialised list.
+ *
+ * Room stores primitives only (see CLAUDE.md), and rows are what let a routine's
+ * contents be read, reordered and counted in SQL instead of by deserialising
+ * every routine to answer a question about one.
+ */
+@Entity(
+    tableName = "routine_exercises",
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutRoutineEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["routineId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("routineId")]
+)
+data class RoutineExerciseEntity(
+    @PrimaryKey val id: String,
+    val routineId: String,
+    val exerciseId: String,
+    val position: Int,
+    val sets: Int,
+    val reps: Int?,
+    val seconds: Int?,
+    val weightKg: Double?,
+    val restSeconds: Int
+)
+
+@Entity(
+    tableName = "workout_sessions",
+    indices = [Index("date"), Index("routineId")]
+)
+data class WorkoutSessionEntity(
+    @PrimaryKey val id: String,
+    /**
+     * Null for an unplanned session, and deliberately not a foreign key: a
+     * session is a record of something that happened, and deleting the routine
+     * it followed must not erase the history of having done it.
+     */
+    val routineId: String?,
+    val blockId: String?,
+    val date: String,
+    val durationMinutes: Int,
+    val effort: String,
+    val notes: String?,
+    val recordedAtEpochMillis: Long
+)
+
+@Entity(
+    tableName = "set_logs",
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutSessionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["sessionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("sessionId")]
+)
+data class SetLogEntity(
+    @PrimaryKey val id: String,
+    val sessionId: String,
+    val exerciseId: String,
+    val setNumber: Int,
+    val reps: Int?,
+    val seconds: Int?,
+    val weightKg: Double?,
+    val outcome: String
+)

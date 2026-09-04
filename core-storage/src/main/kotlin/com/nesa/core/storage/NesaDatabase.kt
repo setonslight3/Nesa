@@ -4,14 +4,20 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
+import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
 import com.nesa.core.storage.dao.HistoryDao
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
+import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
+import com.nesa.core.storage.entity.WorkoutRoutineEntity
+import com.nesa.core.storage.entity.WorkoutSessionEntity
 
 /**
  * The local database. It is the source of truth for the whole application:
@@ -28,9 +34,14 @@ import com.nesa.core.storage.entity.WakeChallengeResultEntity
         GoalEntity::class,
         AlarmEntity::class,
         CompletionRecordEntity::class,
-        WakeChallengeResultEntity::class
+        WakeChallengeResultEntity::class,
+        ExerciseEntity::class,
+        WorkoutRoutineEntity::class,
+        RoutineExerciseEntity::class,
+        WorkoutSessionEntity::class,
+        SetLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class NesaDatabase : RoomDatabase() {
@@ -38,6 +49,7 @@ abstract class NesaDatabase : RoomDatabase() {
     abstract fun goalDao(): GoalDao
     abstract fun alarmDao(): AlarmDao
     abstract fun historyDao(): HistoryDao
+    abstract fun fitnessDao(): FitnessDao
 
     companion object {
         const val NAME: String = "nesa.db"

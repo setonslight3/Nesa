@@ -51,6 +51,82 @@ object NesaMigrations {
         }
     }
 
+    /**
+     * 3 → 4: the fitness module's five tables.
+     *
+     * All new, so nothing existing is touched and there is no data to move.
+     *
+     * The DDL is written to match what Room generates, because Room validates
+     * the migrated schema against its own and throws if they differ by so much
+     * as a nullability. If a build fails here with an "expected/found" schema
+     * dump, the fix is to make this DDL match the *expected* half — never to
+     * relax the entity to match this.
+     *
+     * Note what `workout_sessions` deliberately does not have: a foreign key to
+     * `workout_routines`. Deleting a routine must not erase the history of
+     * having trained with it.
+     */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `exercises` (" +
+                    "`id` TEXT NOT NULL, `name` TEXT NOT NULL, `kind` TEXT NOT NULL, " +
+                    "`notes` TEXT, PRIMARY KEY(`id`))"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `workout_routines` (" +
+                    "`id` TEXT NOT NULL, `name` TEXT NOT NULL, `focus` TEXT, " +
+                    "`createdAtEpochMillis` INTEGER NOT NULL, " +
+                    "`updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `routine_exercises` (" +
+                    "`id` TEXT NOT NULL, `routineId` TEXT NOT NULL, " +
+                    "`exerciseId` TEXT NOT NULL, `position` INTEGER NOT NULL, " +
+                    "`sets` INTEGER NOT NULL, `reps` INTEGER, `seconds` INTEGER, " +
+                    "`weightKg` REAL, `restSeconds` INTEGER NOT NULL, PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`routineId`) REFERENCES `workout_routines`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_routine_exercises_routineId` " +
+                    "ON `routine_exercises` (`routineId`)"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `workout_sessions` (" +
+                    "`id` TEXT NOT NULL, `routineId` TEXT, `blockId` TEXT, " +
+                    "`date` TEXT NOT NULL, `durationMinutes` INTEGER NOT NULL, " +
+                    "`effort` TEXT NOT NULL, `notes` TEXT, " +
+                    "`recordedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_workout_sessions_date` " +
+                    "ON `workout_sessions` (`date`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_workout_sessions_routineId` " +
+                    "ON `workout_sessions` (`routineId`)"
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `set_logs` (" +
+                    "`id` TEXT NOT NULL, `sessionId` TEXT NOT NULL, " +
+                    "`exerciseId` TEXT NOT NULL, `setNumber` INTEGER NOT NULL, " +
+                    "`reps` INTEGER, `seconds` INTEGER, `weightKg` REAL, " +
+                    "`outcome` TEXT NOT NULL, PRIMARY KEY(`id`), " +
+                    "FOREIGN KEY(`sessionId`) REFERENCES `workout_sessions`(`id`) " +
+                    "ON UPDATE NO ACTION ON DELETE CASCADE )"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_set_logs_sessionId` " +
+                    "ON `set_logs` (`sessionId`)"
+            )
+        }
+    }
+
     /** Every migration, in order, for the database builder. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }

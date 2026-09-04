@@ -8,8 +8,8 @@ An Android-first adaptive personal assistant. It plans a practical day, protects
 commitments that cannot move, and helps the user recover the ones that slip.
 
 **It is being built in five stages, and the stages are gates, not suggestions.**
-Stage 1 (Core) is implemented. **Stage 2 has begun, with recurrence** — the
-rest of Stage 2 and Stages 3–5 are not started. Do not implement a later
+Stage 1 (Core) is implemented. **Stage 2 is in progress: recurrence and the
+fitness module are built.** Stages 3–5 are not started. Do not implement a later
 stage's features early: fitness, focus, learning, AI, voice, sync, widgets and
 the theme engine all belong to Stages 2–5. A small architectural hook is
 acceptable; a half-built feature is not.
@@ -115,6 +115,7 @@ reimplementing the decision:
 | Applying a user's decision | `ActivityActionHandler` |
 | Turning silence into MISSED | `MissedActivityDetector`, via `DayPlanner` |
 | What happens to an alarm next | `NesaAlarmCoordinator` |
+| Training figures (streak, volume, rest) | `WorkoutProgress` (pure object) |
 
 This is why a tap on a notification and a tap on the timeline cannot drift apart,
 and it is the shape Stage 4's AI command validator will need: AI proposes
@@ -141,6 +142,14 @@ intents, this layer decides.
 - **Foreground services must call `startForeground` synchronously**, on every
   path, before any suspend work. Getting this wrong is what made the alarm fail
   silently; see `AlarmRingerService.promoteToForeground`.
+- **The fitness module is off by default** (`NesaSettings.fitnessEnabled`).
+  Nothing about training appears anywhere while it is off — that is the product
+  rule about not forcing a module on people, and it is enforced by the settings
+  toggle gating the only route in. Turning it *off* never deletes routines or
+  logged sessions: those are the user's record, not the module's scaffolding.
+- **A workout is scheduled as an ordinary `Activity`** with
+  `module = NesaModule.FITNESS`. `AdaptiveScheduler` places it by the same rules
+  as anything else. The fitness module owns plans and history; it never places.
 - **SKIPPED and MISSED are different things** throughout the product. A skip is a
   user decision; a miss is the absence of one. `ActivityEvent.MISS` is never
   offered by any screen, and a test asserts that for every state. Never infer a
@@ -163,7 +172,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 115 unit tests over the scheduler, the state
+The domain modules carry the weight: 127 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.

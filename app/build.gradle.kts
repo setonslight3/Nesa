@@ -81,6 +81,7 @@ dependencies {
     implementation(project(":feature-timeline"))
     implementation(project(":feature-alarm"))
     implementation(project(":feature-settings"))
+    implementation(project(":feature-fitness"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

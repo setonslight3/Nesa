@@ -68,6 +68,7 @@ import java.time.format.FormatStyle
 fun SettingsScreen(
     onBack: () -> Unit,
     onOpenAlarm: () -> Unit,
+    onOpenFitness: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -215,6 +216,24 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_alarm),
                 onClick = onOpenAlarm
             )
+
+            HorizontalDivider(Modifier.padding(vertical = NesaSpacing.sm))
+            SectionHeader(title = stringResource(R.string.settings_modules_title))
+
+            SwitchRow(
+                title = stringResource(R.string.settings_fitness),
+                supportingText = stringResource(R.string.settings_fitness_support),
+                checked = state.settings.fitnessEnabled,
+                onCheckedChange = viewModel::onFitnessEnabledChanged
+            )
+            // Only offered once it is on. A module the user has not asked for
+            // should take up no room at all, not sit there greyed out.
+            if (state.settings.fitnessEnabled) {
+                NavigationRow(
+                    title = stringResource(R.string.settings_fitness_open),
+                    onClick = onOpenFitness
+                )
+            }
 
             SectionHeader(title = stringResource(R.string.settings_about_title))
             Text(

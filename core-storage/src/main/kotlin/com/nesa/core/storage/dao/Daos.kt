@@ -7,9 +7,14 @@ import androidx.room.Upsert
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
+import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
+import com.nesa.core.storage.entity.WorkoutRoutineEntity
+import com.nesa.core.storage.entity.WorkoutSessionEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -148,4 +153,104 @@ interface HistoryDao {
             "ORDER BY recordedAtEpochMillis DESC LIMIT :limit"
     )
     suspend fun recentChallenges(alarmId: String, limit: Int): List<WakeChallengeResultEntity>
+}
+
+/**
+ * Fitness.
+ *
+ * A routine and its exercises are written together in [saveRoutine], as a
+ * transaction: a routine that saved its header and lost its exercises to a
+ * crash would be a plan the user thought they had.
+ */
+@Dao
+interface FitnessDao {
+
+    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    fun observeExercises(): Flow<List<ExerciseEntity>>
+
+    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    suspend fun exercises(): List<ExerciseEntity>
+
+    @Upsert
+    suspend fun upsertExercise(exercise: ExerciseEntity)
+
+    @Query("DELETE FROM exercises WHERE id = :exerciseId")
+    suspend fun deleteExercise(exerciseId: String)
+
+    @Query("SELECT * FROM workout_routines ORDER BY name ASC")
+    fun observeRoutines(): Flow<List<WorkoutRoutineEntity>>
+
+    @Query("SELECT * FROM routine_exercises ORDER BY position ASC, id ASC")
+    fun observeAllRoutineExercises(): Flow<List<RoutineExerciseEntity>>
+
+    @Query("SELECT * FROM workout_routines WHERE id = :routineId")
+    suspend fun routine(routineId: String): WorkoutRoutineEntity?
+
+    @Query("SELECT * FROM routine_exercises WHERE routineId = :routineId ORDER BY position ASC, id ASC")
+    suspend fun routineExercises(routineId: String): List<RoutineExerciseEntity>
+
+    @Upsert
+    suspend fun upsertRoutine(routine: WorkoutRoutineEntity)
+
+    @Upsert
+    suspend fun upsertRoutineExercises(exercises: List<RoutineExerciseEntity>)
+
+    @Query("DELETE FROM routine_exercises WHERE routineId = :routineId")
+    suspend fun clearRoutineExercises(routineId: String)
+
+    @Query("DELETE FROM workout_routines WHERE id = :routineId")
+    suspend fun deleteRoutine(routineId: String)
+
+    @Transaction
+    suspend fun saveRoutine(routine: WorkoutRoutineEntity, exercises: List<RoutineExerciseEntity>) {
+        upsertRoutine(routine)
+        // Replaced wholesale rather than merged: an exercise the user removed
+        // has to disappear, and working out which rows went missing is exactly
+        // the kind of diffing that gets subtly wrong.
+        clearRoutineExercises(routine.id)
+        if (exercises.isNotEmpty()) upsertRoutineExercises(exercises)
+    }
+
+    @Query("SELECT * FROM workout_sessions WHERE date BETWEEN :from AND :to ORDER BY date DESC")
+    fun observeSessions(from: String, to: String): Flow<List<WorkoutSessionEntity>>
+
+    @Query("SELECT * FROM workout_sessions WHERE date BETWEEN :from AND :to ORDER BY date DESC")
+    suspend fun sessions(from: String, to: String): List<WorkoutSessionEntity>
+
+    @Query(
+        """
+        SELECT * FROM set_logs WHERE sessionId IN (
+            SELECT id FROM workout_sessions WHERE date BETWEEN :from AND :to
+        ) ORDER BY setNumber ASC
+        """
+    )
+    fun observeSetLogs(from: String, to: String): Flow<List<SetLogEntity>>
+
+    @Query(
+        """
+        SELECT * FROM set_logs WHERE sessionId IN (
+            SELECT id FROM workout_sessions WHERE date BETWEEN :from AND :to
+        ) ORDER BY setNumber ASC
+        """
+    )
+    suspend fun setLogs(from: String, to: String): List<SetLogEntity>
+
+    @Upsert
+    suspend fun upsertSession(session: WorkoutSessionEntity)
+
+    @Upsert
+    suspend fun upsertSetLogs(logs: List<SetLogEntity>)
+
+    @Query("DELETE FROM set_logs WHERE sessionId = :sessionId")
+    suspend fun clearSetLogs(sessionId: String)
+
+    @Query("DELETE FROM workout_sessions WHERE id = :sessionId")
+    suspend fun deleteSession(sessionId: String)
+
+    @Transaction
+    suspend fun saveSession(session: WorkoutSessionEntity, logs: List<SetLogEntity>) {
+        upsertSession(session)
+        clearSetLogs(session.id)
+        if (logs.isNotEmpty()) upsertSetLogs(logs)
+    }
 }

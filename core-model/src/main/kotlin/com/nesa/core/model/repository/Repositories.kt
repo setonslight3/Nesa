@@ -5,6 +5,7 @@ import com.nesa.core.model.ActivityState
 import com.nesa.core.model.Alarm
 import com.nesa.core.model.CompletionRecord
 import com.nesa.core.model.DayWindow
+import com.nesa.core.model.Exercise
 import com.nesa.core.model.Goal
 import com.nesa.core.model.GuidancePersonality
 import com.nesa.core.model.NesaSettings
@@ -12,6 +13,8 @@ import com.nesa.core.model.PlannedActivity
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.ThemeMode
 import com.nesa.core.model.WakeChallengeResult
+import com.nesa.core.model.WorkoutRoutine
+import com.nesa.core.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
@@ -95,5 +98,33 @@ interface SettingsRepository {
     suspend fun setGuidance(guidance: GuidancePersonality)
     suspend fun setDayWindow(window: DayWindow)
     suspend fun setRemindersEnabled(enabled: Boolean)
+    suspend fun setFitnessEnabled(enabled: Boolean)
     suspend fun setPrimaryAlarmId(alarmId: String?)
+}
+
+/**
+ * The fitness module's persistence.
+ *
+ * Separate from [ActivityRepository] rather than folded into it, because a user
+ * who never opens the fitness module should have nothing of it in their way —
+ * and because a workout that was scheduled is already an ordinary `Activity`.
+ * This interface owns the plans and the history, not the placement.
+ */
+interface FitnessRepository {
+
+    fun observeExercises(): Flow<List<Exercise>>
+    suspend fun exercises(): List<Exercise>
+    suspend fun saveExercise(exercise: Exercise)
+    suspend fun deleteExercise(exerciseId: String)
+
+    fun observeRoutines(): Flow<List<WorkoutRoutine>>
+    suspend fun routine(routineId: String): WorkoutRoutine?
+    suspend fun saveRoutine(routine: WorkoutRoutine)
+    suspend fun deleteRoutine(routineId: String)
+
+    /** Logged sessions in an inclusive date range, newest first. */
+    fun observeSessions(from: LocalDate, to: LocalDate): Flow<List<WorkoutSession>>
+    suspend fun sessions(from: LocalDate, to: LocalDate): List<WorkoutSession>
+    suspend fun logSession(session: WorkoutSession)
+    suspend fun deleteSession(sessionId: String)
 }

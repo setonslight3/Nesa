@@ -4,16 +4,19 @@ import android.content.Context
 import androidx.room.Room
 import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.AlarmRepository
+import com.nesa.core.model.repository.FitnessRepository
 import com.nesa.core.model.repository.GoalRepository
 import com.nesa.core.model.repository.HistoryRepository
 import com.nesa.core.storage.NesaDatabase
 import com.nesa.core.storage.NesaMigrations
 import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
+import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
 import com.nesa.core.storage.dao.HistoryDao
 import com.nesa.core.storage.repository.RoomActivityRepository
 import com.nesa.core.storage.repository.RoomAlarmRepository
+import com.nesa.core.storage.repository.RoomFitnessRepository
 import com.nesa.core.storage.repository.RoomGoalRepository
 import com.nesa.core.storage.repository.RoomHistoryRepository
 import dagger.Binds
@@ -48,6 +51,9 @@ object DatabaseModule {
 
     @Provides
     fun provideHistoryDao(database: NesaDatabase): HistoryDao = database.historyDao()
+
+    @Provides
+    fun provideFitnessDao(database: NesaDatabase): FitnessDao = database.fitnessDao()
 }
 
 /** Binds the domain's repository contracts to their Room implementations. */
@@ -70,4 +76,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindHistoryRepository(impl: RoomHistoryRepository): HistoryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFitnessRepository(impl: RoomFitnessRepository): FitnessRepository
 }

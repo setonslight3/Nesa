@@ -157,6 +157,19 @@ class SettingsViewModel @Inject constructor(
         settings.setRemindersEnabled(enabled)
     }
 
+    /**
+     * Turns the fitness module on or off.
+     *
+     * Off by default. The product rule is that users are never forced to
+     * configure a module they do not use, so while this is false the fitness
+     * screen is not offered and nothing about training appears anywhere. Turning
+     * it off leaves the routines and the logged history in place — they are the
+     * user's record, not the module's scaffolding.
+     */
+    fun onFitnessEnabledChanged(enabled: Boolean) = viewModelScope.launch {
+        settings.setFitnessEnabled(enabled)
+    }
+
 
     fun onDisplayNameChanged(name: String) = viewModelScope.launch {
         settings.setDisplayName(name.trim().takeIf { it.isNotBlank() })

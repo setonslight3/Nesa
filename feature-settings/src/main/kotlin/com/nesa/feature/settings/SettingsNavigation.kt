@@ -11,9 +11,15 @@ object SettingsRoutes {
 fun NavGraphBuilder.settingsGraph(
     onBack: () -> Unit,
     onOpenAlarm: () -> Unit,
+    onOpenFitness: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     composable(SettingsRoutes.ROOT) {
-        SettingsScreen(onBack = onBack, onOpenAlarm = onOpenAlarm, modifier = modifier)
+        SettingsScreen(
+            onBack = onBack,
+            onOpenAlarm = onOpenAlarm,
+            onOpenFitness = onOpenFitness,
+            modifier = modifier
+        )
     }
 }

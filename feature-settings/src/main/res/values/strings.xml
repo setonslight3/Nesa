@@ -63,6 +63,10 @@
     <string name="settings_reliability_test_armed">Armed for %1$s. Lock the phone and wait.</string>
     <string name="settings_reliability_test_failed">Could not arm a test alarm. Set an alarm time first.</string>
 
+    <string name="settings_modules_title">Modules</string>
+    <string name="settings_fitness">Fitness</string>
+    <string name="settings_fitness_support">Workout routines, session logging and how your training week is going. Off unless you want it — nothing about fitness appears anywhere while this is off.</string>
+    <string name="settings_fitness_open">Open fitness</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_body">NESA Stage 1. Your plan, alarms and history live on this device. Nothing is sent anywhere.</string>
 

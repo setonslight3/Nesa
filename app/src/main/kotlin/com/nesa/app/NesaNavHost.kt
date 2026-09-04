@@ -7,6 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.nesa.feature.alarm.AlarmRoutes
 import com.nesa.feature.alarm.alarmGraph
+import com.nesa.feature.fitness.FitnessRoutes
+import com.nesa.feature.fitness.fitnessGraph
+import com.nesa.feature.fitness.routineEditorGraph
 import com.nesa.feature.onboarding.OnboardingRoutes
 import com.nesa.feature.onboarding.onboardingGraph
 import com.nesa.feature.settings.SettingsRoutes
@@ -56,8 +59,19 @@ fun NesaNavHost(
 
         settingsGraph(
             onBack = { navController.popBackStack() },
-            onOpenAlarm = { navController.navigate(AlarmRoutes.SETTINGS) }
+            onOpenAlarm = { navController.navigate(AlarmRoutes.SETTINGS) },
+            onOpenFitness = { navController.navigate(FitnessRoutes.ROOT) }
         )
+
+        fitnessGraph(
+            onBack = { navController.popBackStack() },
+            onAddRoutine = { navController.navigate(FitnessRoutes.NEW_ROUTINE) },
+            onEditRoutine = { routineId ->
+                navController.navigate(FitnessRoutes.editRoutine(routineId))
+            }
+        )
+
+        routineEditorGraph(onDone = { navController.popBackStack() })
     }
 }
 
@@ -66,4 +80,5 @@ object NesaDestinations {
     const val TIMELINE = TimelineRoutes.ROOT
     const val SETTINGS = SettingsRoutes.ROOT
     const val ALARM = AlarmRoutes.SETTINGS
+    const val FITNESS = FitnessRoutes.ROOT
 }

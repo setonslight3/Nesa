@@ -7,6 +7,34 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — Stage 2: the fitness module
+
+A new `:feature-fitness` module (added to `settings.gradle.kts` and `:app`).
+Domain-first as usual, and **schema 3 → 4** with five new tables.
+
+- `core-model/Fitness.kt` — `Exercise`, `WorkoutRoutine`/`RoutineExercise` (the
+  plan) and `WorkoutSession`/`SetLog` (what happened), kept separate on purpose.
+  A routine's duration is derived, not stored, so the screen estimate and the
+  scheduler estimate are the same number.
+- `core-scheduling/WorkoutProgress.kt` — a pure object producing the week's
+  figures: sessions, streak in completed weeks, volume, days since last, and a
+  rest recommendation. Rules are fixed, not learned; adapting load to the
+  individual is Stage 3.
+- Storage: `exercises`, `workout_routines`, `routine_exercises`,
+  `workout_sessions`, `set_logs`, plus `FitnessDao` and `RoomFitnessRepository`.
+- `NesaSettings.fitnessEnabled`, **off by default**, gating the only route in.
+- Twelve new domain tests. Expect **127 domain tests**.
+
+**Worth watching for at build time.** `MIGRATION_3_4` writes its `CREATE TABLE`
+DDL by hand, and Room validates the result against its own generated schema. If
+the build fails with an "expected/found" schema dump, that is the thing to paste
+here — the fix is to make the DDL match the *expected* half, and it is a Claude
+change, not an Antigravity one. Also expect a new exported schema at
+`core-storage/schemas/com.nesa.core.storage.NesaDatabase/4.json`.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## Pending — Stage 2 begins: recurrence
 
 Activities can now repeat. Domain-first, as usual:

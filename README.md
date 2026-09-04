@@ -5,7 +5,7 @@ protects the commitments that cannot move, and helps you recover the ones that
 slip — without turning productivity into punishment.
 
 **Status: Stage 1 (Core) is implemented, with one open defect (see
-`docs/verification.md`). Stage 2 has begun with recurrence.** Stages 3–5 have
+`docs/verification.md`). Stage 2 is in progress: recurrence and fitness.** Stages 3–5 have
 not been started.
 
 ---

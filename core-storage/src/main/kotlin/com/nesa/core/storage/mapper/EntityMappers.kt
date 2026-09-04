@@ -8,25 +8,38 @@ import com.nesa.core.model.ChangeReasonCodec
 import com.nesa.core.model.CompletionRecord
 import com.nesa.core.model.CompletionResult
 import com.nesa.core.model.DayWindow
+import com.nesa.core.model.Exercise
+import com.nesa.core.model.ExerciseKind
 import com.nesa.core.model.Flexibility
 import com.nesa.core.model.Goal
 import com.nesa.core.model.GoalCategory
 import com.nesa.core.model.GoalStatus
 import com.nesa.core.model.NesaModule
+import com.nesa.core.model.PerceivedEffort
 import com.nesa.core.model.Priority
 import com.nesa.core.model.Recurrence
 import com.nesa.core.model.RecurrenceFrequency
+import com.nesa.core.model.RoutineExercise
 import com.nesa.core.model.ScheduleBlock
+import com.nesa.core.model.SetLog
+import com.nesa.core.model.SetOutcome
 import com.nesa.core.model.SnoozePolicy
 import com.nesa.core.model.WakeChallengePolicy
 import com.nesa.core.model.WakeChallengeResult
 import com.nesa.core.model.WakeChallengeType
+import com.nesa.core.model.WorkoutRoutine
+import com.nesa.core.model.WorkoutSession
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.AlarmEntity
 import com.nesa.core.storage.entity.CompletionRecordEntity
+import com.nesa.core.storage.entity.ExerciseEntity
 import com.nesa.core.storage.entity.GoalEntity
+import com.nesa.core.storage.entity.RoutineExerciseEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.SetLogEntity
 import com.nesa.core.storage.entity.WakeChallengeResultEntity
+import com.nesa.core.storage.entity.WorkoutRoutineEntity
+import com.nesa.core.storage.entity.WorkoutSessionEntity
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
@@ -241,5 +254,119 @@ fun WakeChallengeResult.toEntity(): WakeChallengeResultEntity = WakeChallengeRes
     succeeded = succeeded,
     mistakes = mistakes,
     elapsedMillis = elapsedMillis,
+    recordedAtEpochMillis = recordedAt.toEpochMilli()
+)
+
+// --- Fitness ----------------------------------------------------------------
+
+fun ExerciseEntity.toDomain(): Exercise = Exercise(
+    id = id,
+    name = name,
+    kind = kind.toEnum(ExerciseKind.Default),
+    notes = notes
+)
+
+fun Exercise.toEntity(): ExerciseEntity = ExerciseEntity(
+    id = id,
+    name = name,
+    kind = kind.name,
+    notes = notes
+)
+
+/**
+ * Rebuilds a planned exercise, repairing a row rather than throwing on it.
+ *
+ * `RoutineExercise` requires that either reps or seconds is present, which is
+ * right for code constructing one and wrong for a row read off disk: a routine
+ * that could crash the fitness screen because one of its rows was written by a
+ * different build is a worse outcome than a row that reads as a plain set of
+ * ten. The repair is visible and editable; a crash is neither.
+ */
+fun RoutineExerciseEntity.toDomain(): RoutineExercise {
+    val hasCount = (reps != null && reps > 0) || (seconds != null && seconds > 0)
+    return RoutineExercise(
+        id = id,
+        exerciseId = exerciseId,
+        position = position,
+        sets = sets.coerceIn(1, RoutineExercise.MAX_SETS),
+        reps = if (hasCount) reps?.takeIf { it > 0 } else RoutineExercise.DEFAULT_REPS,
+        seconds = seconds?.takeIf { it > 0 },
+        weightKg = weightKg?.takeIf { it > 0.0 },
+        restSeconds = restSeconds.coerceIn(0, RoutineExercise.MAX_SECONDS)
+    )
+}
+
+fun RoutineExercise.toEntity(routineId: String): RoutineExerciseEntity = RoutineExerciseEntity(
+    id = id,
+    routineId = routineId,
+    exerciseId = exerciseId,
+    position = position,
+    sets = sets,
+    reps = reps,
+    seconds = seconds,
+    weightKg = weightKg,
+    restSeconds = restSeconds
+)
+
+fun WorkoutRoutineEntity.toDomain(exercises: List<RoutineExerciseEntity>): WorkoutRoutine =
+    WorkoutRoutine(
+        id = id,
+        name = name,
+        focus = focus,
+        exercises = exercises.map { it.toDomain() },
+        createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
+        updatedAt = Instant.ofEpochMilli(updatedAtEpochMillis)
+    )
+
+fun WorkoutRoutine.toEntity(): WorkoutRoutineEntity = WorkoutRoutineEntity(
+    id = id,
+    name = name,
+    focus = focus,
+    createdAtEpochMillis = createdAt.toEpochMilli(),
+    updatedAtEpochMillis = updatedAt.toEpochMilli()
+)
+
+fun SetLogEntity.toDomain(): SetLog = SetLog(
+    id = id,
+    sessionId = sessionId,
+    exerciseId = exerciseId,
+    setNumber = setNumber.coerceAtLeast(1),
+    reps = reps?.coerceAtLeast(0),
+    seconds = seconds?.coerceAtLeast(0),
+    weightKg = weightKg?.coerceAtLeast(0.0),
+    outcome = outcome.toEnum(SetOutcome.Default)
+)
+
+fun SetLog.toEntity(): SetLogEntity = SetLogEntity(
+    id = id,
+    sessionId = sessionId,
+    exerciseId = exerciseId,
+    setNumber = setNumber,
+    reps = reps,
+    seconds = seconds,
+    weightKg = weightKg,
+    outcome = outcome.name
+)
+
+fun WorkoutSessionEntity.toDomain(sets: List<SetLogEntity>): WorkoutSession = WorkoutSession(
+    id = id,
+    routineId = routineId,
+    blockId = blockId,
+    date = LocalDate.parse(date),
+    durationMinutes = durationMinutes.coerceAtLeast(0),
+    effort = effort.toEnum(PerceivedEffort.Default),
+    sets = sets.map { it.toDomain() },
+    notes = notes,
+    recordedAt = Instant.ofEpochMilli(recordedAtEpochMillis)
+)
+
+fun WorkoutSession.toEntity(): WorkoutSessionEntity = WorkoutSessionEntity(
+    id = id,
+    routineId = routineId,
+    blockId = blockId,
+    date = date.toString(),
+    durationMinutes = durationMinutes,
+    effort = effort.name,
+    notes = notes,
     recordedAtEpochMillis = recordedAt.toEpochMilli()
 )

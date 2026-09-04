@@ -4,21 +4,28 @@ import com.nesa.core.model.Activity
 import com.nesa.core.model.ActivityState
 import com.nesa.core.model.Alarm
 import com.nesa.core.model.CompletionRecord
+import com.nesa.core.model.Exercise
 import com.nesa.core.model.Goal
 import com.nesa.core.model.PlannedActivity
 import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.WakeChallengeResult
+import com.nesa.core.model.WorkoutRoutine
+import com.nesa.core.model.WorkoutSession
 import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.AlarmRepository
+import com.nesa.core.model.repository.FitnessRepository
 import com.nesa.core.model.repository.GoalRepository
 import com.nesa.core.model.repository.HistoryRepository
 import com.nesa.core.storage.dao.ActivityDao
 import com.nesa.core.storage.dao.AlarmDao
+import com.nesa.core.storage.dao.FitnessDao
 import com.nesa.core.storage.dao.GoalDao
 import com.nesa.core.storage.dao.HistoryDao
 import com.nesa.core.storage.entity.ActivityEntity
 import com.nesa.core.storage.entity.ScheduleBlockEntity
+import com.nesa.core.storage.entity.SetLogEntity
+import com.nesa.core.storage.entity.WorkoutSessionEntity
 import com.nesa.core.storage.mapper.toDomain
 import com.nesa.core.storage.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
@@ -163,4 +170,80 @@ class RoomHistoryRepository @Inject constructor(
     override suspend fun recentChallengeResults(alarmId: String, limit: Int): List<WakeChallengeResult> =
         // Stored newest first; the difficulty policy reads history oldest first.
         dao.recentChallenges(alarmId, limit).map { it.toDomain() }.reversed()
+}
+
+/**
+ * Fitness, backed by Room.
+ *
+ * Routines and sessions are each stored across two tables — a header and its
+ * rows — so every read here joins them back together. The join is done in
+ * Kotlin over two queries rather than with a Room `@Relation`, because the
+ * domain types are plain data classes that know nothing about Room and are not
+ * going to gain annotations to suit it.
+ */
+@Singleton
+class RoomFitnessRepository @Inject constructor(
+    private val dao: FitnessDao
+) : FitnessRepository {
+
+    override fun observeExercises(): Flow<List<Exercise>> =
+        dao.observeExercises().map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun exercises(): List<Exercise> = dao.exercises().map { it.toDomain() }
+
+    override suspend fun saveExercise(exercise: Exercise) {
+        dao.upsertExercise(exercise.toEntity())
+    }
+
+    override suspend fun deleteExercise(exerciseId: String) {
+        dao.deleteExercise(exerciseId)
+    }
+
+    override fun observeRoutines(): Flow<List<WorkoutRoutine>> =
+        combine(dao.observeRoutines(), dao.observeAllRoutineExercises()) { routines, exercises ->
+            val byRoutine = exercises.groupBy { it.routineId }
+            routines.map { routine -> routine.toDomain(byRoutine[routine.id].orEmpty()) }
+        }
+
+    override suspend fun routine(routineId: String): WorkoutRoutine? =
+        dao.routine(routineId)?.toDomain(dao.routineExercises(routineId))
+
+    override suspend fun saveRoutine(routine: WorkoutRoutine) {
+        dao.saveRoutine(
+            routine.toEntity(),
+            routine.exercises.map { it.toEntity(routine.id) }
+        )
+    }
+
+    override suspend fun deleteRoutine(routineId: String) {
+        dao.deleteRoutine(routineId)
+    }
+
+    override fun observeSessions(from: LocalDate, to: LocalDate): Flow<List<WorkoutSession>> =
+        combine(
+            dao.observeSessions(from.toString(), to.toString()),
+            dao.observeSetLogs(from.toString(), to.toString())
+        ) { sessions, logs -> joinSessions(sessions, logs) }
+
+    override suspend fun sessions(from: LocalDate, to: LocalDate): List<WorkoutSession> =
+        joinSessions(
+            dao.sessions(from.toString(), to.toString()),
+            dao.setLogs(from.toString(), to.toString())
+        )
+
+    override suspend fun logSession(session: WorkoutSession) {
+        dao.saveSession(session.toEntity(), session.sets.map { it.toEntity() })
+    }
+
+    override suspend fun deleteSession(sessionId: String) {
+        dao.deleteSession(sessionId)
+    }
+
+    private fun joinSessions(
+        sessions: List<WorkoutSessionEntity>,
+        logs: List<SetLogEntity>
+    ): List<WorkoutSession> {
+        val bySession = logs.groupBy { it.sessionId }
+        return sessions.map { it.toDomain(bySession[it.id].orEmpty()) }
+    }
 }

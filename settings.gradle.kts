@@ -38,6 +38,7 @@ include(":feature-onboarding")
 include(":feature-timeline")
 include(":feature-alarm")
 include(":feature-settings")
+include(":feature-fitness")
 
 // --- Application shell ------------------------------------------------------
 include(":app")

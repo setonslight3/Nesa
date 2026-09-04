@@ -1,0 +1,53 @@
+<resources>
+    <string name="fitness_title">Fitness</string>
+    <string name="fitness_week_heading">This week</string>
+    <string name="fitness_week_sessions">%1$d of %2$d sessions</string>
+    <string name="fitness_streak">%1$d week streak</string>
+    <string name="fitness_streak_none">No streak yet — a week of %1$d starts one.</string>
+    <string name="fitness_volume">%1$s kg lifted this week</string>
+    <string name="fitness_never_trained">Nothing logged yet. Build a routine and log your first session.</string>
+    <string name="fitness_last_today">Trained today.</string>
+    <string name="fitness_last_yesterday">Last trained yesterday.</string>
+    <string name="fitness_last_days">Last trained %1$d days ago.</string>
+    <string name="fitness_rest_advised">Two demanding days in a row. Today is a good day to rest.</string>
+
+    <string name="fitness_routines">Routines</string>
+    <string name="fitness_no_routines">No routines yet. A routine is a list of exercises you can log in one tap.</string>
+    <string name="fitness_add_routine">New routine</string>
+    <string name="fitness_edit">Edit</string>
+    <string name="fitness_delete">Delete</string>
+    <string name="fitness_log">Log this</string>
+    <string name="fitness_routine_summary">%1$d exercises · about %2$d min</string>
+    <string name="fitness_effort_prompt">How hard was it?</string>
+    <string name="fitness_logged">Logged.</string>
+
+    <string name="fitness_recent">Recent sessions</string>
+    <string name="fitness_session_summary">%1$s · %2$d min · %3$s</string>
+    <string name="fitness_session_unplanned">Unplanned session</string>
+
+    <string name="routine_title_new">New routine</string>
+    <string name="routine_title_edit">Edit routine</string>
+    <string name="routine_name">Name</string>
+    <string name="routine_name_error">Give the routine a name</string>
+    <string name="routine_focus">What it is for (optional)</string>
+    <string name="routine_exercises">Exercises</string>
+    <string name="routine_add_exercise">Add an exercise</string>
+    <string name="routine_no_exercises">No exercises yet. An empty routine is still saved — you can fill it in later.</string>
+    <string name="routine_exercise_name">Exercise</string>
+    <string name="routine_sets">Sets: %1$d</string>
+    <string name="routine_reps">Reps: %1$d</string>
+    <string name="routine_seconds">Seconds: %1$d</string>
+    <string name="routine_weight">Weight (kg, optional)</string>
+    <string name="routine_remove">Remove</string>
+    <string name="routine_estimated">About %1$d minutes</string>
+    <string name="routine_save">Save routine</string>
+
+    <string name="effort_easy">Easy</string>
+    <string name="effort_moderate">Moderate</string>
+    <string name="effort_hard">Hard</string>
+    <string name="effort_maximal">All out</string>
+
+    <string name="kind_strength">Strength</string>
+    <string name="kind_cardio">Cardio</string>
+    <string name="kind_mobility">Mobility</string>
+</resources>
