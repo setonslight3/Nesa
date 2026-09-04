@@ -7,6 +7,24 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — reminders that can be heard, and the alarm left open
+
+The reminders channel was created at `IMPORTANCE_DEFAULT`: a sound, never a
+heads-up pop-up. A channel's importance is frozen at creation and Android
+ignores later attempts to raise it, so on any phone that already had NESA
+installed no change to the old channel id could have produced a pop-up. The id
+is now `nesa_reminders_v2` at `IMPORTANCE_HIGH` with vibration, and the old
+`nesa_reminders` channel is deleted so it does not linger in the user's
+notification settings.
+
+The alarm's delivery lateness is **not fixed** and is now recorded as the
+project's one open defect, in full, under the UNRESOLVED heading in
+docs/verification.md and pointed at from CLAUDE.md. Stage 2 starts with it open,
+by the user's decision.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## Pending — ringtone picker, per-alarm volume, and a Room migration
 
 - `Alarm.volumePercent` (10–100, default 80) with **schema 1 → 2 migration** in

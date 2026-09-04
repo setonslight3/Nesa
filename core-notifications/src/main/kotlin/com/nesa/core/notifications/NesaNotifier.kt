@@ -71,7 +71,12 @@ class NesaNotifier @Inject constructor(
                 )
             )
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            // On API 26+ the channel's importance decides whether this pops up
+            // and makes a sound, not this line — see NesaChannels.REMINDERS,
+            // which is why the channel id had to change. This is kept so the
+            // notification's own intent matches the channel's rather than
+            // quietly contradicting it.
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(openAppIntent())
             .addAction(

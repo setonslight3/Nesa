@@ -543,6 +543,132 @@ through a manifest component and the manufacturer's auto-start gate. Stage 2
 begins with this outstanding, at the user's decision, and it stays here until
 it is closed.
 
+## Gate run 9 — three checks pass, the alarm regresses, and it is left open
+
+Reported from the device by the user.
+
+| Check | Result |
+| --- | --- |
+| 1. Alarm | **FAIL.** Regressed — swiping out of Recents no longer rings either. |
+| 2. Reboot survival | **Not run.** The user declined to restart the phone, reasonably: with check 1 failing there was nothing a reboot could have shown. |
+| 3. Anchor protection on real data | **Pass.** |
+| 4. Force-stop persistence | **Pass.** |
+| 5. Reminder | **Partial.** Delivered and answerable, but silent and deferred — see below. |
+
+Checks 3 and 4 are the user's report, not an observed trace, and are recorded as
+such. They cover the scheduler and persistence, which the 101 domain tests
+already exercise, so the report is consistent with what is known.
+
+# UNRESOLVED — the alarm and reminders arrive late on this device
+
+**This is the open defect. It is not fixed. Nothing in this repository should be
+read as claiming otherwise.** It is written out in full here so that whoever
+picks it up next — a person or another assistant, with none of this
+conversation — can start from the evidence rather than from scratch.
+
+## The symptom
+
+On an **Infinix Smart 9 (Transsion, XOS)**, anything NESA schedules through
+`AlarmManager` is delivered late, and the delay ends at the moment the user next
+opens the app. Measured lateness has ranged from **26 to 77 seconds**. The alarm
+itself, once delivered, is completely correct: the ringer promotes to a
+foreground service, the audio plays, the screen takes over, the wake challenge
+runs, the alarm dismisses and the next occurrence re-arms. Every step after
+delivery has been observed working. **The fault is entirely in the handoff.**
+
+The same applies to reminders, which travel the same path.
+
+## What is ruled out, with the evidence
+
+- **Not process death.** The trace has no `app process started` line at delivery.
+  `NesaApplication.onCreate` writes that line, so its absence means the process
+  was alive and suspended, not killed and recreated.
+- **Not broadcast deferral specifically.** A direct
+  `PendingIntent.getForegroundService` was tried in place of the broadcast. It
+  was held back by exactly the same margin. Reverted.
+- **Not permissions.** Exact alarms, battery-optimisation exemption, overlay
+  ("display over other apps"), auto-start and full-screen intent were all
+  granted for the failing traces. Freezing is a process state, not a permission.
+- **Not the alarm reaching the platform.** `setAlarmClock` succeeds and
+  `AlarmManager.nextAlarmClock` confirms the system is holding it.
+- **Not a timer of NESA's own.** There is no in-process timer anywhere in the
+  alarm path; this was audited against a written specification and the audit is
+  in the git history.
+- **Not the device.** A third-party alarm app from the Play Store rings on this
+  exact phone after being swiped from Recents, having asked for no permission
+  setup at all.
+
+## What was tried and did not close it
+
+A foreground service, `AlarmWatchService`, that runs while an alarm is armed and
+declares `android:stopWithTask="false"`. A process holding a foreground service
+is not put in Android's cached-app freezer, and this is the architecture
+reliable third-party alarm apps use. It **partially** worked once: one run rang
+unattended after a swipe, 26 seconds late, which was the first unattended ring
+in the whole investigation. It did not hold — the user reports the swipe case
+failing again afterwards.
+
+Note also `NesaKeepAliveService`, an earlier attempt at the same idea, deleted
+in commit `7745f1e`. It never wrote its own start line to a single trace and
+swallowed every failure in a bare `runCatching`, so it was never a real test of
+the idea. `AlarmWatchService` records being switched off, refused, started,
+swiped away and destroyed, precisely so that mistake is not repeated.
+
+## The clue nobody has followed yet
+
+At one point, swiping the app away produced a **better** result than pressing
+Home — 26 seconds against 70. That is backwards for a cached-app freezer, which
+should punish a removed task at least as hard. A process holding a foreground
+service with no task behaves differently on this ROM from the same process with
+a backgrounded task, which points away from process state alone and towards the
+**delivery path**.
+
+## The next thing to try
+
+Transsion's auto-start policy is widely reported to gate **manifest-declared
+broadcast receivers** independently of whether the process is running. NESA's
+alarm `PendingIntent` names `AlarmReceiver` as an explicit component
+(`Intent(context, AlarmReceiver::class.java)`), so every delivery passes through
+that gate.
+
+A receiver **registered at runtime** by the already-running `AlarmWatchService`
+is not a manifest component and is not subject to it. Concretely:
+
+1. Have `AlarmWatchService` call `registerReceiver` for a private action while it
+   runs.
+2. Arm the `PendingIntent` with an action-only intent plus `setPackage(...)`
+   rather than an explicit component.
+3. Keep the manifest `AlarmReceiver` as the cold-start fallback, with a
+   deduplication guard on `(alarmId, triggerAtMillis)` so a delivery that
+   reaches both receivers rings once.
+
+If that fails too, the remaining honest answer is already in the app: the
+handoff on the reliability screen that hands NESA's wake time to the phone's own
+clock app, which the platform will always ring.
+
+## What the reliability screen already gives you
+
+Settings → the alarm trace, "What the alarm actually did". Every step writes a
+timestamped line, including `app swiped from recents`, `watch running`,
+`watch stopped`, and how many seconds late delivery was. **Read the trace before
+forming a theory.** Six of the nine gate runs in this document went wrong by
+reasoning from a description of the symptom instead.
+
+## The reminders, separately
+
+Two distinct problems were reported, and only one of them is the above:
+
+- **Silent, with no pop-up — FIXED.** The reminders channel was created at
+  `IMPORTANCE_DEFAULT`, which makes a sound but never a heads-up pop-up. A
+  channel's importance is frozen at creation and Android ignores every later
+  attempt to raise it, so no change to the old channel id could have worked on a
+  phone that already had NESA installed. The channel id is now
+  `nesa_reminders_v2` at `IMPORTANCE_HIGH` with vibration, and the old channel is
+  deleted so it does not linger in settings. **Not yet verified on the device.**
+- **Not delivered until the app is opened — the same unresolved defect above.**
+  Reminders go through `AlarmManager` and `ReminderReceiver`, the same path as
+  the alarm, and they are held back the same way.
+
 ## The gate: five checks
 
 These are the observations that would close the remaining items. They take

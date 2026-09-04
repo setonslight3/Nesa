@@ -1,6 +1,6 @@
 <resources>
     <string name="nesa_channel_reminders_name">Activity reminders</string>
-    <string name="nesa_channel_reminders_description">Nudges when a planned activity is due.</string>
+    <string name="nesa_channel_reminders_description">Nudges when a planned activity is due. Pops up, makes a sound and vibrates so you can answer without opening NESA.</string>
     <string name="nesa_channel_alarm_name">Wake alarm</string>
     <string name="nesa_channel_alarm_description">Your smart alarm. Keep this enabled so NESA can wake you.</string>
     <string name="nesa_channel_review_name">Daily review</string>

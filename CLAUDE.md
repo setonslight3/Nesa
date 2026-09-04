@@ -16,6 +16,16 @@ acceptable; a half-built feature is not.
 `docs/verification.md` records exactly what has been verified and what has not.
 **Read it before claiming anything works.** Stage 1 has not yet passed its gate.
 
+**There is one known, open defect, and it is the important one.** On the test
+device (Infinix Smart 9, Transsion XOS) everything NESA schedules through
+`AlarmManager` — the wake alarm and the activity reminders alike — is delivered
+26 to 77 seconds late, and the delay ends the moment the user reopens the app.
+Everything after delivery works. `docs/verification.md` has a section headed
+**UNRESOLVED** that carries the full evidence, what has been ruled out and why,
+and the next thing to try. Read that section before touching the alarm path;
+six of nine attempts at this went wrong by theorising from the symptom instead
+of reading the on-device trace.
+
 ## Two agents work on this repository
 
 Claude writes the code; Antigravity on the VPS compiles it and runs it on a
@@ -148,7 +158,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 92 unit tests over the scheduler, the state
+The domain modules carry the weight: 101 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.
