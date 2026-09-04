@@ -25,23 +25,20 @@ by the user's decision.
 `python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
 Android SDK in this environment.
 
-## Pending — ringtone picker, per-alarm volume, and a Room migration
+## 2026-09-04 — 2275622 — SUCCESS
 
-- `Alarm.volumePercent` (10–100, default 80) with **schema 1 → 2 migration** in
-  the new `NesaMigrations`. Destructive fallback is off and the test phone has
-  real data, so this migration is mandatory — without it the app will refuse to
-  open the database on update.
-- Ringtone picker on the alarm screen via `RingtoneManager.ACTION_RINGTONE_PICKER`.
-- `AlarmAudioPlayer` now sets the alarm stream to the chosen level and restores
-  the device's own level when the alarm stops.
-- Three new domain tests on the volume bounds — expect 101 domain tests.
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 101/101 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
 
-Worth watching for at build time: the Room schema export should produce
-`core-storage/schemas/com.nesa.core.storage.NesaDatabase/2.json`. If Room
-complains about a missing migration, that is the thing to report, not to fix.
+Delivers:
+- System Ringtone Picker via `RingtoneManager.ACTION_RINGTONE_PICKER` directly in Alarm Settings.
+- Per-alarm volume slider (10%–100%, default 80%) with automatic system stream level adjustment during ring and full restore on alarm stop.
+- Room database schema migration (Version 1 → 2) via `NesaMigrations` safely preserving existing user alarms.
+- 3 new domain tests verifying volume bounds and validation invariants (101 total domain tests).
 
-`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
-Android SDK in this environment.
+The schema 1 → 2 migration built and the tests passed, so `NesaMigrations`
+covers the new `volumePercent` column correctly and an existing install keeps
+its alarms.
 
 ## 2026-09-04 — d211ff8 — SUCCESS
 
