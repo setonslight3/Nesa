@@ -36,11 +36,19 @@ suite does not reach. The existing 98 domain tests should be unaffected.
 `python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
 Android SDK in this environment.
 
-## Pending — architecture audit against the alarm-clock spec
+## 2026-09-04 — 7745f1e — SUCCESS
 
-Audited the alarm against a written specification for a proper Android
-alarm-clock implementation. Most of it was already satisfied; three items were
-not, and all three are now done:
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 98/98 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Architecture clean up according to Android AlarmClock specification.
+- Reverted alarm delivery to standard `BroadcastReceiver`.
+- Cleaned up and removed unneeded `NesaKeepAliveService`.
+- Added Android 14+ `canUseFullScreenIntent()` verification and UI row in the reliability screen.
+- Added 4 new tests for editing, cancellation, restoration, and day rolling (98 total domain tests).
+
+The audit behind that build, in full:
 
 - Reverted alarm delivery to a `BroadcastReceiver`. The direct
   `getForegroundService` experiment was held back by exactly the same margin, so
