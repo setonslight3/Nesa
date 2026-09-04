@@ -13,12 +13,6 @@ data class NesaSettings(
     val guidance: GuidancePersonality = GuidancePersonality.Default,
     val dayWindow: DayWindow = DayWindow.Default,
     val remindersEnabled: Boolean = true,
-    /**
-     * Keeps NESA's process alive with an ongoing notification, for phones that
-     * freeze background apps and drop their alarms. Off by default: it costs a
-     * permanent notification and most phones do not need it.
-     */
-    val keepAliveEnabled: Boolean = false,
     /** The alarm the timeline treats as "the" wake alarm, if one is set up. */
     val primaryAlarmId: String? = null
 ) {

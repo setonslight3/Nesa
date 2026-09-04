@@ -47,7 +47,6 @@ class NesaSettingsRepository(
         val EveningStartMinute = intPreferencesKey("evening_start_minute")
         val NightStartMinute = intPreferencesKey("night_start_minute")
         val RemindersEnabled = booleanPreferencesKey("reminders_enabled")
-        val KeepAliveEnabled = booleanPreferencesKey("keep_alive_enabled")
         val PrimaryAlarmId = stringPreferencesKey("primary_alarm_id")
     }
 
@@ -89,10 +88,6 @@ class NesaSettingsRepository(
         it[Keys.RemindersEnabled] = enabled
     }
 
-    override suspend fun setKeepAliveEnabled(enabled: Boolean) = edit {
-        it[Keys.KeepAliveEnabled] = enabled
-    }
-
     override suspend fun setPrimaryAlarmId(alarmId: String?) = edit { preferences ->
         if (alarmId == null) preferences.remove(Keys.PrimaryAlarmId)
         else preferences[Keys.PrimaryAlarmId] = alarmId
@@ -117,7 +112,6 @@ class NesaSettingsRepository(
                 nightStarts = DayWindow.timeOf(this[Keys.NightStartMinute] ?: DayWindow.minuteOf(defaults.nightStarts))
             ),
             remindersEnabled = this[Keys.RemindersEnabled] ?: true,
-            keepAliveEnabled = this[Keys.KeepAliveEnabled] ?: false,
             primaryAlarmId = this[Keys.PrimaryAlarmId]
         )
     }

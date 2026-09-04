@@ -1,11 +1,14 @@
 package com.nesa.core.notifications
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.getSystemService
 import com.nesa.core.model.PlannedActivity
 import com.nesa.core.scheduling.ActivityEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +33,22 @@ class NesaNotifier @Inject constructor(
     /** False when the user has denied or disabled notifications. Never assume. */
     val enabled: Boolean
         get() = NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+    /**
+     * Whether NESA may show a full-screen intent — the thing that turns a
+     * notification into an alarm taking over the screen.
+     *
+     * Android 14 made this a separate, revocable grant. It is given by default to
+     * apps whose purpose is alarms or calls, but it can be withdrawn, and a
+     * withdrawn grant silently downgrades the alarm to an ordinary heads-up
+     * notification. Before API 34 the capability always existed.
+     */
+    val canUseFullScreenIntent: Boolean
+        get() = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            true
+        } else {
+            context.getSystemService<NotificationManager>()?.canUseFullScreenIntent() ?: false
+        }
 
     fun ensureChannels() = NesaChannels.ensureCreated(context)
 

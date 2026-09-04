@@ -100,6 +100,60 @@ class NextAlarmCalculatorTest {
     }
 
     @Test
+    fun `an edited alarm resolves to one occurrence, never two`() {
+        // The scheduler cancels before it arms and reuses one request code per
+        // alarm id, so an edit replaces the schedule. The calculator's job is to
+        // give exactly one answer for the edited alarm, which is what makes that
+        // replacement unambiguous.
+        val now = ZonedDateTime.of(TestDate, LocalTime.of(5, 0), zone)
+        val original = alarm(time = LocalTime.of(6, 30))
+        val edited = original.copy(time = LocalTime.of(8, 0))
+
+        assertEquals(LocalTime.of(6, 30), NextAlarmCalculator.next(original, now)!!.toLocalTime())
+        assertEquals(LocalTime.of(8, 0), NextAlarmCalculator.next(edited, now)!!.toLocalTime())
+        assertEquals(
+            "the same alarm always resolves to the same instant",
+            NextAlarmCalculator.next(edited, now),
+            NextAlarmCalculator.next(edited, now)
+        )
+    }
+
+    @Test
+    fun `a disabled alarm resolves to nothing, so cancelling is unambiguous`() {
+        val now = ZonedDateTime.of(TestDate, LocalTime.of(5, 0), zone)
+        val repeating = alarm(days = setOf(DayOfWeek.MONDAY), enabled = false)
+
+        assertNull(NextAlarmCalculator.next(repeating, now))
+    }
+
+    @Test
+    fun `state is rebuilt from the alarm alone, with no memory of past firings`() {
+        // The receiver reconstructs everything from stored configuration, so the
+        // calculator must depend on nothing but the alarm and the moment asked.
+        val now = ZonedDateTime.of(TestDate, LocalTime.of(9, 0), zone)
+        val repeating = alarm(
+            time = LocalTime.of(6, 30),
+            days = setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY)
+        )
+
+        val first = NextAlarmCalculator.next(repeating, now)
+        val second = NextAlarmCalculator.next(repeating.copy(), now)
+        assertEquals(first, second)
+        assertEquals(DayOfWeek.WEDNESDAY, first!!.dayOfWeek)
+    }
+
+    @Test
+    fun `a repeating alarm rolls to the next matching day once today has passed`() {
+        // TestDate is a Monday; 09:00 is past a 06:30 alarm.
+        val now = ZonedDateTime.of(TestDate, LocalTime.of(9, 0), zone)
+        val everyDay = alarm(days = DayOfWeek.entries.toSet())
+
+        val next = NextAlarmCalculator.next(everyDay, now)!!
+        assertEquals(TestDate.plusDays(1), next.toLocalDate())
+        assertEquals(LocalTime.of(6, 30), next.toLocalTime())
+    }
+
+    @Test
     fun `snoozes are bounded too`() {
         val a = alarm(snooze = SnoozePolicy(maxSnoozes = 2))
         assertFalse(NextAlarmCalculator.snoozeExhausted(a, 1))

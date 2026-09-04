@@ -119,11 +119,11 @@ class AlarmScheduler @Inject constructor(
      * app owns when the app is swiped out of the recents list.
      */
     fun isArmed(alarmId: String): Boolean {
-        val intent = Intent(context, AlarmRingerService::class.java).apply {
-            action = AlarmRingerService.ACTION_START
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_FIRE
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         }
-        return PendingIntent.getForegroundService(
+        return PendingIntent.getBroadcast(
             context,
             alarmId.hashCode(),
             intent,
@@ -141,31 +141,31 @@ class AlarmScheduler @Inject constructor(
         alarmManager?.nextAlarmClock?.triggerTime
 
     /**
-     * Starts the ringer service directly, rather than sending a broadcast.
+     * The PendingIntent AlarmManager holds for this alarm.
      *
-     * This is the difference between an alarm that arrives and one that waits.
-     * Android defers broadcasts to an app it has frozen, holding them until
-     * something wakes the process — which is exactly the symptom seen on a
-     * Transsion device: armed for 23:34:40, delivered at 23:35:25, the moment the
-     * user reopened the app. Every step after delivery was already correct.
+     * A broadcast receiver, which is the standard Android alarm-clock shape: it
+     * is delivered whether or not NESA's process is running, and it rebuilds
+     * everything it needs from the database rather than from memory.
      *
-     * A PendingIntent that starts a foreground service is not a broadcast and is
-     * not subject to that queue. An exact alarm also exempts the start from the
-     * usual ban on launching a foreground service from the background, so the
-     * two work together.
+     * A direct `getForegroundService` PendingIntent was tried instead, on the
+     * theory that broadcasts to a frozen app are deferred. It was held back by
+     * exactly the same amount, so the deferral is not broadcast-specific and the
+     * standard receiver is the better architecture to keep.
      *
-     * @param triggerAtMillis travels with the alarm so the service can report how
-     *   late delivery actually was. PendingIntent equality ignores extras, so
+     * @param triggerAtMillis travels with the alarm so the receiver can report
+     *   how late delivery actually was. PendingIntent equality ignores extras, so
      *   cancelling and the armed check still match regardless.
      */
     private fun firePendingIntent(alarmId: String, triggerAtMillis: Long = 0L): PendingIntent {
-        val intent = Intent(context, AlarmRingerService::class.java).apply {
-            action = AlarmRingerService.ACTION_START
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_FIRE
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
             putExtra(AlarmReceiver.EXTRA_SCHEDULED_AT, triggerAtMillis)
         }
-        return PendingIntent.getForegroundService(
+        return PendingIntent.getBroadcast(
             context,
+            // Stable per alarm, so editing an alarm replaces its schedule rather
+            // than adding a second one.
             alarmId.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

@@ -7,6 +7,29 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — architecture audit against the alarm-clock spec
+
+Audited the alarm against a written specification for a proper Android
+alarm-clock implementation. Most of it was already satisfied; three items were
+not, and all three are now done:
+
+- Reverted alarm delivery to a `BroadcastReceiver`. The direct
+  `getForegroundService` experiment was held back by exactly the same margin, so
+  the deferral is not broadcast-specific and the standard architecture is the
+  better one to keep.
+- Removed `NesaKeepAliveService` entirely, along with its setting, its toggle and
+  its permission. No trace ever showed it running, and a permanent foreground
+  service to keep an alarm alive is the wrong shape regardless.
+- Added `canUseFullScreenIntent()`, the Android 14+ revocable grant that silently
+  downgrades an alarm to an ordinary notification. It has its own row in the
+  reliability screen.
+
+Four new tests cover editing, cancellation, restoration from stored state, and
+the roll to the next matching day. 98 domain tests pass.
+
+The freeze itself is unchanged and unfixable from application code; see
+docs/verification.md gate run 6.
+
 ## 2026-09-03 — 5bc97f4 — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).

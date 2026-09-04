@@ -306,6 +306,12 @@ private fun ReliabilitySection(
         onFix = { onOpen(viewModel.overlaySettings()) }
     )
     PermissionRow(
+        title = stringResource(R.string.settings_reliability_fullscreen),
+        supportingText = stringResource(R.string.settings_reliability_fullscreen_support),
+        granted = reliability.canUseFullScreenIntent,
+        onFix = { onOpen(viewModel.fullScreenIntentSettings()) }
+    )
+    PermissionRow(
         title = stringResource(R.string.settings_reliability_notifications),
         supportingText = stringResource(R.string.settings_reliability_notifications_support),
         granted = reliability.notificationsAllowed,
@@ -347,34 +353,6 @@ private fun ReliabilitySection(
         NoticeCard(
             text = stringResource(R.string.settings_reliability_not_armed_support),
             emphasis = NoticeEmphasis.WARNING
-        )
-    }
-
-    // Offered, never imposed: a permanent notification is a real cost, so this
-    // stays off until the user decides their phone needs it.
-    SwitchRow(
-        title = stringResource(R.string.settings_reliability_keep_alive),
-        supportingText = stringResource(R.string.settings_reliability_keep_alive_support),
-        checked = state.settings.keepAliveEnabled,
-        onCheckedChange = viewModel::onKeepAliveChanged
-    )
-
-    // The toggle records a wish; this records what the phone actually did with it.
-    if (state.settings.keepAliveEnabled) {
-        Text(
-            text = stringResource(
-                if (reliability.keepAliveRunning) {
-                    R.string.settings_reliability_keep_alive_active
-                } else {
-                    R.string.settings_reliability_keep_alive_dead
-                }
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (reliability.keepAliveRunning) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.error
-            }
         )
     }
 

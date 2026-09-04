@@ -31,8 +31,11 @@ data class ReliabilityStatus(
      * which is exactly what the ringing screen has to do.
      */
     val canAppearOverOtherApps: Boolean = false,
-    /** Whether the keep-alive service is alive, not merely switched on. */
-    val keepAliveRunning: Boolean = false,
+    /**
+     * Android 14 made the full-screen intent a revocable grant. Without it the
+     * alarm degrades to an ordinary notification instead of taking the screen.
+     */
+    val canUseFullScreenIntent: Boolean = true,
     /** Whether the platform is still holding NESA's alarm right now. */
     val alarmArmed: Boolean = false,
     /** The next alarm clock the system knows about, from any app. */
@@ -41,7 +44,7 @@ data class ReliabilityStatus(
     /** True when no permission is standing in the way of a dependable alarm. */
     val isFullyReliable: Boolean
         get() = exactAlarmsAllowed && ignoringBatteryOptimisations &&
-            notificationsAllowed && canAppearOverOtherApps
+            notificationsAllowed && canAppearOverOtherApps && canUseFullScreenIntent
 
     /**
      * Every permission is granted but the platform is not holding the alarm.
@@ -73,7 +76,7 @@ class BackgroundReliability @Inject constructor(
         ignoringBatteryOptimisations = isIgnoringBatteryOptimisations(),
         notificationsAllowed = notifier.enabled,
         canAppearOverOtherApps = canAppearOverOtherApps(),
-        keepAliveRunning = NesaKeepAliveService.isRunning,
+        canUseFullScreenIntent = notifier.canUseFullScreenIntent,
         alarmArmed = coordinator.isPrimaryAlarmArmed(),
         nextSystemAlarmMillis = coordinator.nextSystemAlarmClockMillis()
     )
@@ -113,6 +116,12 @@ class BackgroundReliability @Inject constructor(
 
     fun overlaySettings(): Intent =
         Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+
+    /** The Android 14+ screen for granting the full-screen intent. */
+    fun fullScreenIntentSettings(): Intent =
+        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
             data = Uri.fromParts("package", context.packageName, null)
         }
 

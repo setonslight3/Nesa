@@ -6,9 +6,7 @@ import androidx.work.Configuration
 import com.nesa.core.alarm.DayPlanWorker
 import com.nesa.core.alarm.NesaAlarmCoordinator
 import com.nesa.core.alarm.AlarmEventLog
-import com.nesa.core.alarm.NesaKeepAliveService
 import com.nesa.core.alarm.ReminderScheduler
-import com.nesa.core.model.repository.SettingsRepository
 import com.nesa.core.notifications.NesaChannels
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +31,6 @@ class NesaApplication : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var alarmCoordinator: NesaAlarmCoordinator
     @Inject lateinit var reminders: ReminderScheduler
-    @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var events: AlarmEventLog
 
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -58,11 +55,6 @@ class NesaApplication : Application(), Configuration.Provider {
             runCatching { reminders.scheduleFor(LocalDate.now()) }
             DayPlanWorker.enqueuePeriodic(this@NesaApplication)
 
-            // Only if the user asked for it. Starting a permanent notification
-            // uninvited would be exactly the coercion NESA is meant to avoid.
-            if (runCatching { settings.current().keepAliveEnabled }.getOrDefault(false)) {
-                NesaKeepAliveService.start(this@NesaApplication)
-            }
         }
     }
 }

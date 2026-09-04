@@ -84,6 +84,5 @@ interface SettingsRepository {
     suspend fun setGuidance(guidance: GuidancePersonality)
     suspend fun setDayWindow(window: DayWindow)
     suspend fun setRemindersEnabled(enabled: Boolean)
-    suspend fun setKeepAliveEnabled(enabled: Boolean)
     suspend fun setPrimaryAlarmId(alarmId: String?)
 }

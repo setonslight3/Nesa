@@ -11,7 +11,6 @@ import com.nesa.core.model.ThemeMode
 import com.nesa.core.model.repository.AlarmRepository
 import com.nesa.core.model.repository.SettingsRepository
 import com.nesa.core.alarm.BackgroundReliability
-import com.nesa.core.alarm.KeepAliveController
 import com.nesa.core.alarm.SystemAlarmHandoff
 import com.nesa.core.alarm.ReliabilityStatus
 import com.nesa.core.notifications.NesaNotifier
@@ -49,7 +48,6 @@ class SettingsViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val notifier: NesaNotifier,
     private val reliability: BackgroundReliability,
-    private val keepAlive: KeepAliveController,
     private val systemAlarm: SystemAlarmHandoff,
     private val alarms: AlarmRepository
 ) : ViewModel() {
@@ -131,6 +129,8 @@ class SettingsViewModel @Inject constructor(
 
     fun overlaySettings(): Intent = reliability.overlaySettings()
 
+    fun fullScreenIntentSettings(): Intent = reliability.fullScreenIntentSettings()
+
     fun appDetailsSettings(): Intent = reliability.appDetailsSettings()
 
     fun onThemeModeChanged(mode: ThemeMode) = viewModelScope.launch {
@@ -145,15 +145,6 @@ class SettingsViewModel @Inject constructor(
         settings.setRemindersEnabled(enabled)
     }
 
-    /**
-     * Turning this on starts the keep-alive service immediately, rather than at
-     * the next launch — the user turned it on because their alarms are failing
-     * now.
-     */
-    fun onKeepAliveChanged(enabled: Boolean) = viewModelScope.launch {
-        settings.setKeepAliveEnabled(enabled)
-        if (enabled) keepAlive.start() else keepAlive.stop()
-    }
 
     fun onDisplayNameChanged(name: String) = viewModelScope.launch {
         settings.setDisplayName(name.trim().takeIf { it.isNotBlank() })

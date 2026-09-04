@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.nesa.core.model.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +24,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
 
     @Inject lateinit var coordinator: NesaAlarmCoordinator
     @Inject lateinit var reminders: ReminderScheduler
-    @Inject lateinit var settings: SettingsRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in HANDLED_ACTIONS) return
@@ -36,7 +34,6 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 coordinator.rearmAll()
                 reminders.scheduleFor(LocalDate.now())
                 DayPlanWorker.enqueuePeriodic(context)
-                if (settings.current().keepAliveEnabled) NesaKeepAliveService.start(context)
             } catch (error: Exception) {
                 Log.w(TAG, "Could not restore alarms after ${intent.action}", error)
             } finally {
