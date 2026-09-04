@@ -7,10 +7,15 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — deliver the alarm as a service start, not a broadcast
+## 2026-09-03 — 5bc97f4 — SUCCESS
 
-The overlay permission worked: the trace now shows "alarm screen launched over
-the foreground", and the volume fix is holding at 10/15. But the alarm was still
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 92/92 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- Direct foreground service start (`PendingIntent.getForegroundService`) for alarms to bypass broadcast queuing on frozen apps.
+- Process lifecycle diagnostics in trace: logs "app process started" on Application startup and whether keep-alive service is genuinely running.
+
 withheld until the app was reopened, 44s late.
 
 Untried until now: the alarm was arriving as a **broadcast**, and Android defers
