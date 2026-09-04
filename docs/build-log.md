@@ -18,6 +18,22 @@ e: file:///C:/Users/Setons/.gemini/antigravity/scratch/Nesa/feature-fitness/src/
 
 Cause: In `FitnessScreen.kt:210:68`, string resource formatting `stringResource(R.string.fitness_days_ago, progress.daysSinceLast)` or smart-cast check on `progress.daysSinceLast` (nullable Int declared in `:core-scheduling` module) cannot be smart-cast directly across module boundaries without assigning to a local val.
 
+**Fixed by Claude.** The diagnosis above is exactly right. `FitnessSummary.daysSinceLast`
+is a `Long?` declared in `:core-scheduling` and read in `:feature-fitness`, so
+the `when` subject is bound to a local `val` before its branches use it.
+
+`tools/check-imports.py` now catches this class of error too, and was verified
+by re-introducing this exact bug and watching it reported. It indexes which
+Gradle module declares each nullable `val`, so it only flags a null test whose
+subject genuinely crosses a module boundary — a same-module smart cast is legal
+and must not be reported, or the tool starts crying wolf and gets ignored. That
+narrowing was not theoretical: the first, blunter version flagged
+`OnboardingScreen.kt`, which compiles perfectly well.
+
+---
+
+The change this failed on:
+
 Domain-first as usual, and **schema 3 → 4** with five new tables.
 
 - `core-model/Fitness.kt` — `Exercise`, `WorkoutRoutine`/`RoutineExercise` (the

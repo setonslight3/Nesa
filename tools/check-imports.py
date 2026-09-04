@@ -9,11 +9,16 @@ survives until someone else builds the project. That has cost a full
 build-and-report round trip at least once, when imports were stripped from
 AlarmRingerService while slimming it down and nothing noticed.
 
-This checks the two cases that actually happen in practice:
+This checks the three cases that actually happen in practice:
 
   1. A project type (com.nesa.*) used in a file that neither imports it nor
      declares it nor shares its package.
   2. A well-known coroutines/flow function used without its import.
+  3. A nullable property tested for null and then used, without being bound to
+     a local first. Kotlin refuses to smart-cast a property declared in another
+     module, and this codebase is all modules — so the pattern compiles fine in
+     the module that declares the type and fails in the one that reads it. It
+     cost a build round trip on FitnessScreen.kt.
 
 It cannot type-check, resolve overloads, or understand the Android SDK, and it
 will never replace a build. It catches the mechanical mistakes, cheaply, before
@@ -64,6 +69,95 @@ def project_symbols():
     return index
 
 
+# A property access that a null test cannot smart-cast: at least one dot, and a
+# receiver that is not a bare local. `summary.daysSinceLast` matches; `days` does
+# not, because a local val smart-casts perfectly well.
+SMART_CAST_SUBJECT = re.compile(r"\b([a-z]\w*(?:\.[a-z]\w*)+)\b")
+
+
+def nullable_property_modules():
+    """
+    Nullable `val` properties, and which Gradle module declares each.
+
+    The module is what makes this precise rather than noisy. Kotlin smart-casts
+    a property perfectly well inside the module that declares it, so flagging
+    every null test would cry wolf on code that compiles — and a checker that
+    cries wolf gets ignored, which is worse than not having one.
+    """
+    owner = {}
+    for path in glob.glob("*/src/*/kotlin/**/*.kt", recursive=True):
+        module = path.split(os.sep, 1)[0]
+        for name in re.findall(r"^\s*(?:override |open |private |internal )*va[lr]\s+(\w+)\s*:\s*[\w.<>, ]+\?",
+                               open(path, encoding="utf-8").read(), re.M):
+            owner.setdefault(name, set()).add(module)
+    return owner
+
+
+def smart_cast_findings(path, body, nullable_owner):
+    """
+    Nullable properties tested and then re-read without a local binding.
+
+    Two shapes, both of which Kotlin rejects across a module boundary:
+
+        when (a.b) { null -> ...  else -> f(a.b) }
+        if (a.b != null) { f(a.b) }
+
+    The advice is the same either way and is never wrong even when the smart
+    cast would have been allowed: bind it to a local val and use that. So this
+    stays deliberately blunt rather than trying to work out which module
+    declared the property, which it has no way to know.
+    """
+    findings = []
+    nullable_owner = nullable_property_modules()
+
+    module = path.split(os.sep, 1)[0]
+
+    def is_cross_module(subject):
+        """True only when some *other* module declares this nullable property."""
+        declaring = nullable_owner.get(subject.rsplit(".", 1)[-1], set())
+        return bool(declaring - {module})
+
+    for match in re.finditer(r"\bwhen\s*\(\s*([^()\n]+?)\s*\)\s*\{", body):
+        subject = match.group(1).strip()
+        if not SMART_CAST_SUBJECT.fullmatch(subject) or not is_cross_module(subject):
+            continue
+        block = balanced_block(body, match.end() - 1)
+        if "null" in block and re.search(rf"(?<![\w.]){re.escape(subject)}\b", block):
+            findings.append(
+                f"{path}: `when ({subject})` has a null branch and reads "
+                f"`{subject}` again — bind it to a local val first, or Kotlin "
+                f"cannot smart-cast it across a module boundary"
+            )
+
+    for match in re.finditer(r"\bif\s*\(\s*([^()\n]+?)\s*!=\s*null\s*\)\s*\{", body):
+        subject = match.group(1).strip()
+        if not SMART_CAST_SUBJECT.fullmatch(subject) or not is_cross_module(subject):
+            continue
+        block = balanced_block(body, match.end() - 1)
+        if re.search(rf"(?<![\w.]){re.escape(subject)}\b(?!\s*[!=]=)", block):
+            findings.append(
+                f"{path}: `if ({subject} != null)` then reads `{subject}` — "
+                f"bind it to a local val first, or Kotlin cannot smart-cast it "
+                f"across a module boundary"
+            )
+
+    return findings
+
+
+def balanced_block(text, open_brace_index):
+    """The text between a `{` and its matching `}`. Empty if it never closes."""
+    depth = 0
+    for index in range(open_brace_index, len(text)):
+        char = text[index]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[open_brace_index + 1:index]
+    return ""
+
+
 def strip_noise(source):
     """Remove comments and string literals so their contents are not read as code."""
     source = re.sub(r"/\*.*?\*/", " ", source, flags=re.S)
@@ -79,6 +173,8 @@ def main():
     for package, names in index.items():
         for name in names:
             owner.setdefault(name, set()).add(package)
+
+    nullable_owner = nullable_property_modules()
 
     findings = []
     for path in sorted(glob.glob("*/src/*/kotlin/**/*.kt", recursive=True)):
@@ -116,9 +212,11 @@ def main():
             if re.search(rf"(?<![\w.]){re.escape(name)}\s*\(", body):
                 findings.append(f"{path}: calls '{name}' without importing {full}")
 
+        findings.extend(smart_cast_findings(path, body, nullable_owner))
+
     for finding in sorted(set(findings)):
         print("  " + finding)
-    print(f"\n{len(set(findings))} probable missing import(s).")
+    print(f"\n{len(set(findings))} probable problem(s).")
     return 1 if findings else 0
 
 

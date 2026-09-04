@@ -200,14 +200,21 @@ private fun WeekSummary(summary: FitnessSummary) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        // "Never trained" and "trained today" must read differently; a null
-        // daysSinceLast is the first of those and not a zero.
+        // Bound to a local first. `daysSinceLast` is a public property of a
+        // class in :core-scheduling, and Kotlin will not smart-cast one of those
+        // across a module boundary — another module could, in principle, make it
+        // a custom getter that returns something different on the second read.
+        // The local is that second read taken once.
+        //
+        // "Never trained" and "trained today" must also read differently, which
+        // is why null is a branch of its own and not folded into zero.
+        val daysSinceLast = summary.daysSinceLast
         Text(
-            text = when (summary.daysSinceLast) {
+            text = when (daysSinceLast) {
                 null -> stringResource(R.string.fitness_never_trained)
                 0L -> stringResource(R.string.fitness_last_today)
                 1L -> stringResource(R.string.fitness_last_yesterday)
-                else -> stringResource(R.string.fitness_last_days, summary.daysSinceLast)
+                else -> stringResource(R.string.fitness_last_days, daysSinceLast)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
