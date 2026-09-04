@@ -7,6 +7,27 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## Pending — Stage 2 (Life): night review, statistics, and a stage correction
+
+The three specification documents are now in `docs/spec/`, extracted verbatim.
+Their absence is why the fitness module was built a stage early; see
+`docs/roadmap.md`.
+
+- `NightReview` — closes a day and proposes where unfinished work should go,
+  from priority, flexibility, deadline and tomorrow's anchors, in that order.
+  Refuses rather than inventing a slot. 12 tests.
+- `PlanStatistics` — daily and weekly figures. Skips are excluded from the
+  completion denominator. 9 tests.
+- `AdaptiveInsights` and `CompletionRecord.scheduledStartMinute` (**schema 4 → 5**)
+  from the previous push. 7 tests.
+
+Expect **155 domain tests**. This build carries **one** schema change (`4 → 5`,
+a single nullable column on `completion_records`), deliberately, so a Room
+schema mismatch would be unambiguous. A new `schemas/…/5.json` should appear.
+
+`python3 tools/check-imports.py` reports 0 problems. Not compiled here — no
+Android SDK in this environment.
+
 ## 2026-09-04 — c532b1c — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 127/127 domain tests across 12 test suites).

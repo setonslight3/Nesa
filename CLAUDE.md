@@ -8,10 +8,24 @@ An Android-first adaptive personal assistant. It plans a practical day, protects
 commitments that cannot move, and helps the user recover the ones that slip.
 
 **It is being built in five stages, and the stages are gates, not suggestions.**
-Stage 1 (Core) is implemented. **Stage 2 is in progress: recurrence and the
-fitness module are built.** Stages 3–5 are not started. Do not implement a later
-stage's features early: fitness, focus, learning, AI, voice, sync, widgets and
-the theme engine all belong to Stages 2–5. A small architectural hook is
+
+**`docs/spec/` holds the three specification documents verbatim, and they are the
+source of truth.** Read them before deciding what belongs where. They were absent
+from this repository until Stage 2, and their absence cost real work: the fitness
+module was built a whole stage early on an inference from a one-word list. If the
+code and the specification disagree, the code is wrong.
+
+| Stage | Scope |
+| --- | --- |
+| 1 — Core | Onboarding, timeline, activities, scheduling, alarm, wake challenge, notifications, settings |
+| 2 — Life | Work/school/training schedules, recurrence, optional prayer and meals, recovery, night review, missed-activity review, daily/weekly statistics |
+| 3 — Health & Focus | Fitness, learning, focus/screen-time |
+| 4 — Intelligence | AIProvider abstraction, Gemini adapter, typed commands, granular permissions, voice |
+| 5 — Personalize | Themes, custom colours, backgrounds, widgets, advanced personalization, polish |
+
+Stage 1 is implemented. **Stage 2 (Life) is in progress.** Fitness is built but
+belongs to Stage 3 — see `docs/roadmap.md` for why it was not reverted. Do not
+implement a later stage's features early. A small architectural hook is
 acceptable; a half-built feature is not.
 
 `docs/verification.md` records exactly what has been verified and what has not.
@@ -172,7 +186,7 @@ From the product specification. These are not preferences:
 
 ## Testing
 
-The domain modules carry the weight: 127 unit tests over the scheduler, the state
+The domain modules carry the weight: 155 unit tests over the scheduler, the state
 machine, missed-vs-skipped, DST edge cases, challenge generation and the recovery
 loop. They run on a JDK with no emulator, and they are the regression net for
 everything else.
