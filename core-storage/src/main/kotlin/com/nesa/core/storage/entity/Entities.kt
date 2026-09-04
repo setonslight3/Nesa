@@ -111,7 +111,9 @@ data class CompletionRecordEntity(
     val date: String,
     val result: String,
     val recordedAtEpochMillis: Long,
-    val note: String?
+    val note: String?,
+    /** Added in schema 5. Null for records written before it existed. */
+    val scheduledStartMinute: Int?
 )
 
 @Entity(

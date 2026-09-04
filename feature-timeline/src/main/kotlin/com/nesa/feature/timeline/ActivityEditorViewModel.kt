@@ -12,12 +12,16 @@ import com.nesa.core.model.Recurrence
 import com.nesa.core.model.RecurrenceFrequency
 import com.nesa.core.model.ScheduleBlock
 import com.nesa.core.model.repository.ActivityRepository
+import com.nesa.core.model.repository.HistoryRepository
 import com.nesa.core.model.repository.SettingsRepository
+import com.nesa.core.scheduling.AdaptiveInsights
+import com.nesa.core.scheduling.DayBand
 import com.nesa.core.scheduling.DayPlanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -40,6 +44,12 @@ data class ActivityEditorUiState(
     val flexibility: Flexibility = Flexibility.TIME_FLEXIBLE,
     val deadline: LocalTime? = null,
     val recurrence: Recurrence = Recurrence.Once,
+    /**
+     * The part of the day this activity is heading for, when history says that
+     * part tends not to survive. Null means NESA has nothing worth saying —
+     * which is the usual case and must stay the quiet one.
+     */
+    val weakBandWarning: DayBand? = null,
     val date: LocalDate = LocalDate.now(),
     val saving: Boolean = false,
     val saved: Boolean = false,
@@ -64,6 +74,7 @@ data class ActivityEditorUiState(
 class ActivityEditorViewModel @Inject constructor(
     private val activities: ActivityRepository,
     private val settings: SettingsRepository,
+    private val history: HistoryRepository,
     private val planner: DayPlanner,
     private val clock: Clock,
     savedStateHandle: SavedStateHandle
@@ -82,6 +93,7 @@ class ActivityEditorViewModel @Inject constructor(
             _state.update { it.copy(start = suggestedStart(window)) }
 
             if (editingId != null) load(editingId)
+            refreshWeakBandWarning()
         }
     }
 
@@ -90,7 +102,34 @@ class ActivityEditorViewModel @Inject constructor(
 
     fun onNotesChanged(notes: String) = _state.update { it.copy(notes = notes) }
 
-    fun onStartChanged(start: LocalTime) = _state.update { it.copy(start = start) }
+    fun onStartChanged(start: LocalTime) {
+        _state.update { it.copy(start = start) }
+        viewModelScope.launch { refreshWeakBandWarning() }
+    }
+
+    /**
+     * Warns when the chosen time lands in a part of the day this person's own
+     * history says does not survive.
+     *
+     * A warning, never a move. NESA does not quietly relocate an activity
+     * because a statistic disagreed with the user — that is the difference
+     * between a planner people trust and one that feels like it is arguing with
+     * them. AdaptiveInsights stays silent until it has enough evidence, so most
+     * of the time this sets nothing.
+     */
+    private suspend fun refreshWeakBandWarning() {
+        val chosen = _state.value.start
+        val warning = runCatching {
+            val window = settings.current().dayWindow
+            val records = history
+                .observeRecords(LocalDate.now(clock).minusDays(HISTORY_DAYS), LocalDate.now(clock))
+                .first()
+            val band = AdaptiveInsights.bandOf(chosen, window)
+            band.takeIf { weak -> AdaptiveInsights.weakBands(records, window).any { it.band == weak } }
+        }.getOrNull()
+
+        _state.update { it.copy(weakBandWarning = warning) }
+    }
 
     fun onDurationChanged(minutes: Int) =
         _state.update { it.copy(durationMinutes = minutes.coerceIn(MIN_MINUTES, MAX_MINUTES)) }
@@ -260,5 +299,13 @@ class ActivityEditorViewModel @Inject constructor(
         const val MIN_MINUTES = 5
         const val MAX_MINUTES = 12 * 60
         const val SLOT_MINUTES = 30
+
+        /**
+         * How far back the weak-band warning looks.
+         *
+         * Long enough to be evidence, short enough that a habit someone fixed
+         * two months ago stops being held against them.
+         */
+        const val HISTORY_DAYS = 45L
     }
 }

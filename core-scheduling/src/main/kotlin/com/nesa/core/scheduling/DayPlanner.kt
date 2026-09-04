@@ -129,7 +129,8 @@ class DayPlanner(
                     blockId = item.block.id,
                     date = item.block.date,
                     result = CompletionResult.MISSED,
-                    recordedAt = Instant.now(clock)
+                    recordedAt = Instant.now(clock),
+                    scheduledStartMinute = item.block.startMinuteOfDay
                 )
             )
         }

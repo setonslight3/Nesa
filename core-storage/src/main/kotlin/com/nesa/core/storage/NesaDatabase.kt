@@ -41,7 +41,7 @@ import com.nesa.core.storage.entity.WorkoutSessionEntity
         WorkoutSessionEntity::class,
         SetLogEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class NesaDatabase : RoomDatabase() {

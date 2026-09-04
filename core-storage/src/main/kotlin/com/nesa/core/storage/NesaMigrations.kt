@@ -127,6 +127,26 @@ object NesaMigrations {
         }
     }
 
+    /**
+     * 4 → 5: completion records remember the slot they are about.
+     *
+     * Nullable on purpose, and left null for every existing row. The adaptive
+     * layer reads this history to work out which times of day actually work for
+     * the user, and back-filling a guess — the time the record happened to be
+     * written, say — would teach it something that was never true. A record
+     * that cannot answer honestly is skipped instead.
+     */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE completion_records ADD COLUMN scheduledStartMinute INTEGER")
+        }
+    }
+
     /** Every migration, in order, for the database builder. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_1_2,
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5
+    )
 }

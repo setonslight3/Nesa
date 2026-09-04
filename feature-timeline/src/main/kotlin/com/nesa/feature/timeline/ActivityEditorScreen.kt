@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nesa.core.model.Flexibility
 import com.nesa.core.model.Priority
+import com.nesa.core.scheduling.DayBand
 import com.nesa.core.model.Recurrence
 import com.nesa.core.ui.component.NesaScaffold
 import com.nesa.core.ui.component.NesaTimePickerDialog
@@ -156,6 +157,15 @@ fun ActivityEditorScreen(
                 NoticeCard(text = state.flexibility.help())
             }
 
+            // Shown next to the time, where the decision is being made, and
+            // phrased as an observation rather than an instruction. The user is
+            // free to ignore it; NESA does not move anything on its own.
+            state.weakBandWarning?.let { band ->
+                NoticeCard(
+                    text = stringResource(R.string.editor_weak_band, stringResource(band.labelRes()))
+                )
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(NesaSpacing.sm)) {
                 Text(
                     text = stringResource(R.string.editor_repeat),
@@ -269,4 +279,11 @@ private enum class RepeatPreset(val label: Int, val recurrence: Recurrence) {
     fun matches(current: Recurrence): Boolean =
         current.frequency == recurrence.frequency &&
             current.daysOfWeek == recurrence.daysOfWeek
+}
+
+internal fun DayBand.labelRes(): Int = when (this) {
+    DayBand.MORNING -> R.string.band_morning
+    DayBand.AFTERNOON -> R.string.band_afternoon
+    DayBand.EVENING -> R.string.band_evening
+    DayBand.NIGHT -> R.string.band_night
 }

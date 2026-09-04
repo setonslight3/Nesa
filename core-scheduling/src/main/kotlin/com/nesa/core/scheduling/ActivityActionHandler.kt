@@ -53,7 +53,8 @@ class ActivityActionHandler(
                     date = item.block.date,
                     result = outcome,
                     recordedAt = Instant.now(clock),
-                    note = note
+                    note = note,
+                    scheduledStartMinute = item.block.startMinuteOfDay
                 )
             )
         }

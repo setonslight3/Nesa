@@ -45,6 +45,11 @@
     <string name="editor_start">Start at</string>
     <string name="editor_duration">How long?</string>
     <string name="editor_duration_value">%1$d minutes</string>
+    <string name="editor_weak_band">Worth knowing: things you plan for the %1$s tend not to get finished. NESA will still put it there — this is only what your own history says.</string>
+    <string name="band_morning">morning</string>
+    <string name="band_afternoon">afternoon</string>
+    <string name="band_evening">evening</string>
+    <string name="band_night">night</string>
     <string name="editor_repeat">Repeat</string>
     <string name="editor_repeat_once">Once</string>
     <string name="editor_repeat_daily">Every day</string>

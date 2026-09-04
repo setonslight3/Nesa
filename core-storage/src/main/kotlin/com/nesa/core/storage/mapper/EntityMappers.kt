@@ -54,6 +54,9 @@ import java.time.LocalDateTime
  * crashing the app on launch.
  */
 
+/** Guards a stored minute-of-day against a row that cannot be trusted. */
+private const val MINUTES_IN_DAY = 24 * 60
+
 private inline fun <reified T : Enum<T>> String?.toEnum(fallback: T): T =
     this?.let { name -> enumValues<T>().firstOrNull { it.name == name } } ?: fallback
 
@@ -222,7 +225,8 @@ fun CompletionRecordEntity.toDomain(): CompletionRecord = CompletionRecord(
     date = LocalDate.parse(date),
     result = result.toEnum(CompletionResult.COMPLETED),
     recordedAt = Instant.ofEpochMilli(recordedAtEpochMillis),
-    note = note
+    note = note,
+    scheduledStartMinute = scheduledStartMinute?.takeIf { it in 0 until MINUTES_IN_DAY }
 )
 
 fun CompletionRecord.toEntity(): CompletionRecordEntity = CompletionRecordEntity(
@@ -232,7 +236,8 @@ fun CompletionRecord.toEntity(): CompletionRecordEntity = CompletionRecordEntity
     date = date.toString(),
     result = result.name,
     recordedAtEpochMillis = recordedAt.toEpochMilli(),
-    note = note
+    note = note,
+    scheduledStartMinute = scheduledStartMinute
 )
 
 fun WakeChallengeResultEntity.toDomain(): WakeChallengeResult = WakeChallengeResult(
