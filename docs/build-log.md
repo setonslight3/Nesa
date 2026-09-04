@@ -7,10 +7,18 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
-## Pending — the alarm watch, and a correction to gate run 6
+## 2026-09-04 — d211ff8 — SUCCESS
 
-Gate run 6 called the frozen process a platform ceiling. It is not: a Play Store
-alarm app rings on the same Infinix Smart 9 after being swiped out of Recents,
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 98/98 domain tests).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- `AlarmWatchService`: Foreground service active strictly while an alarm is armed (`android:stopWithTask="false"`), preventing process caching/freezing on aggressive OEM ROMs (like Infinix/Transsion).
+- `NesaAlarmCoordinator.refreshWatch`: Synchronizes alarm arming state and watch lifecycle to ensure no drift.
+- "Keep NESA ready to ring" setting toggle in reliability screen (enabled by default).
+- Direct, DI-free static `AlarmEventLog.write(context, message)` to capture receiver execution before DI injection.
+- Complete trace logging for watch service state and lifecycle events.
+
 with no permission setup at all. The correction and the reasoning are in
 docs/verification.md gate run 7 and docs/android-platform.md.
 
