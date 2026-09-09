@@ -7,6 +7,20 @@ Format: date, commit built, outcome, and the exact output if it failed.
 
 ---
 
+## 2026-09-09 — Alarm Reliability & Dynamic Receiver Fix — SUCCESS
+
+Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 168/168 domain tests across 16 test suites).
+Uploaded updated `NESA-debug.apk` to GitHub Release `v0.1.0-stage1`.
+
+Delivers:
+- **`AlarmWakeLock` & Continuous CPU Wakefulness**: Synchronous partial wake lock acquired immediately upon AlarmManager broadcast arrival in `AlarmReceiver` and held across `AlarmRingerService.onStartCommand()` to eliminate the deep-sleep CPU race condition during overnight Doze.
+- **Dynamic Runtime Receiver in `AlarmWatchService`**: Registers dynamic `BroadcastReceiver` listening for `ACTION_FIRE` within the running foreground watch service, bypassing OEM manifest freeze gates (e.g., Transsion XOS / Infinix / Tecno).
+- **Package-Scoped Action Intent**: Dispatches alarm broadcasts via `setPackage(context.packageName)` with deduplication so delivery reaches both dynamic and manifest receivers safely without double-firing.
+- **`ReminderReceiver` WakeLock**: Wraps reminder verification in a wake lock to prevent background reminder freezes.
+- **Auto-Start Manager Shortcuts**: Added explicit button in the Reliability settings screen to launch OEM Auto-Start managers (Infinix Phone Master, Xiaomi Security, Oppo, Vivo, Samsung, etc.).
+
+---
+
 ## 2026-09-04 — b8affd5 — SUCCESS
 
 Built and packaged successfully (`./gradlew assembleDebug` and `./gradlew test` passing 168/168 domain tests across 16 test suites).

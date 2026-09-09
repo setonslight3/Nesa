@@ -43,7 +43,8 @@
     <string name="settings_reliability_notifications_support">Without this, NESA cannot show the alarm screen or send reminders.</string>
     <string name="settings_reliability_granted">Granted</string>
     <string name="settings_reliability_fix">Fix</string>
-    <string name="settings_reliability_manufacturer">Some phones — Oppo, Realme, OnePlus, Xiaomi, Huawei and others — add their own "Auto-start" or "Auto-launch" setting that no app can detect or request. If the alarm still does not ring, open NESA in system settings and turn on auto-start, then set battery usage to "Don't optimise" or "Allow background activity".</string>
+    <string name="settings_reliability_manufacturer">Some phones — Infinix, Tecno, Xiaomi, Oppo, Realme, OnePlus, Huawei and others — add their own "Auto-start" or "Auto-launch" setting in Phone Master or System Settings that no app can detect. If the alarm does not ring when closed, open Auto-Start and allow NESA, and set battery usage to "Unrestricted" / "Don\'t optimise".</string>
+    <string name="settings_reliability_open_autostart">Open Auto-Start Settings</string>
     <string name="settings_reliability_open_app_settings">Open NESA in system settings</string>
     <string name="settings_reliability_armed">Alarm is armed in the system</string>
     <string name="settings_reliability_not_armed">The system is NOT holding an alarm for NESA</string>

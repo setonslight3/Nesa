@@ -137,8 +137,8 @@ class AlarmScheduler @Inject constructor(
      * app owns when the app is swiped out of the recents list.
      */
     fun isArmed(alarmId: String): Boolean {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_FIRE
+        val intent = Intent(AlarmReceiver.ACTION_FIRE).apply {
+            setPackage(context.packageName)
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
         }
         return PendingIntent.getBroadcast(
@@ -161,22 +161,16 @@ class AlarmScheduler @Inject constructor(
     /**
      * The PendingIntent AlarmManager holds for this alarm.
      *
-     * A broadcast receiver, which is the standard Android alarm-clock shape: it
-     * is delivered whether or not NESA's process is running, and it rebuilds
-     * everything it needs from the database rather than from memory.
-     *
-     * A direct `getForegroundService` PendingIntent was tried instead, on the
-     * theory that broadcasts to a frozen app are deferred. It was held back by
-     * exactly the same amount, so the deferral is not broadcast-specific and the
-     * standard receiver is the better architecture to keep.
+     * Package-scoped action intent delivered to both AlarmWatchService's dynamic
+     * receiver (bypassing OEM manifest freeze gates) and AlarmReceiver fallback.
      *
      * @param triggerAtMillis travels with the alarm so the receiver can report
      *   how late delivery actually was. PendingIntent equality ignores extras, so
      *   cancelling and the armed check still match regardless.
      */
     private fun firePendingIntent(alarmId: String, triggerAtMillis: Long = 0L): PendingIntent {
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            action = AlarmReceiver.ACTION_FIRE
+        val intent = Intent(AlarmReceiver.ACTION_FIRE).apply {
+            setPackage(context.packageName)
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
             putExtra(AlarmReceiver.EXTRA_SCHEDULED_AT, triggerAtMillis)
         }

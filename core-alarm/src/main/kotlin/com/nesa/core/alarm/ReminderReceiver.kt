@@ -3,7 +3,9 @@ package com.nesa.core.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import android.util.Log
+import androidx.core.content.getSystemService
 import com.nesa.core.model.repository.ActivityRepository
 import com.nesa.core.model.repository.SettingsRepository
 import com.nesa.core.notifications.NesaNotifier
@@ -19,9 +21,8 @@ import javax.inject.Inject
 /**
  * Delivers a reminder, if one is still warranted.
  *
- * The decision is re-made here against current state rather than trusted from
- * when the reminder was scheduled, so an activity the user already completed,
- * skipped or deferred never produces a nudge.
+ * Holds a brief wake lock during execution so the device does not sleep before
+ * the coroutine finishes checking state and posting the reminder notification.
  */
 @AndroidEntryPoint
 class ReminderReceiver : BroadcastReceiver() {
@@ -35,6 +36,12 @@ class ReminderReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_REMIND) return
         val blockId = intent.getStringExtra(EXTRA_BLOCK_ID) ?: return
 
+        val power = context.getSystemService<PowerManager>()
+        val wakeLock = power?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)?.apply {
+            setReferenceCounted(false)
+            acquire(30_000L)
+        }
+
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -42,6 +49,9 @@ class ReminderReceiver : BroadcastReceiver() {
             } catch (error: Exception) {
                 Log.w(TAG, "Could not deliver a reminder for block $blockId", error)
             } finally {
+                runCatching {
+                    if (wakeLock?.isHeld == true) wakeLock.release()
+                }
                 pending.finish()
             }
         }
@@ -75,5 +85,6 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_REMIND = "com.nesa.action.REMIND"
         const val EXTRA_BLOCK_ID = "com.nesa.extra.BLOCK_ID"
         private const val TAG = "NesaReminderReceiver"
+        private const val WAKE_LOCK_TAG = "nesa:reminder-delivery"
     }
 }

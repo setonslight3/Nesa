@@ -94,11 +94,19 @@
 
         <receiver
             android:name=".AlarmReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.nesa.action.ALARM_FIRE" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".ReminderReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.nesa.action.REMIND" />
+            </intent-filter>
+        </receiver>
 
         <!--
           Must be exported so the system can deliver boot and clock changes.

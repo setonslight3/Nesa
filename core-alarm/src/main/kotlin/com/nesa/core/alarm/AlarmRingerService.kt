@@ -74,7 +74,13 @@ class AlarmRingerService : Service() {
         }
 
         when (intent?.action) {
-            ACTION_START -> if (alarmId != null) start(alarmId) else stopEverything()
+            ACTION_START -> if (alarmId != null) {
+                acquireWakeLock()
+                AlarmWakeLock.release()
+                start(alarmId)
+            } else {
+                stopEverything()
+            }
             ACTION_SNOOZE -> if (alarmId != null) finish(alarmId, Outcome.SNOOZED) else stopEverything()
             ACTION_DISMISS -> if (alarmId != null) finish(alarmId, Outcome.DISMISSED) else stopEverything()
             ACTION_SLEEP_IN -> if (alarmId != null) finish(alarmId, Outcome.SLEEPING_IN) else stopEverything()
@@ -124,7 +130,6 @@ class AlarmRingerService : Service() {
 
             // Now that the label is known, refine the notification already showing.
             notifier.postRinger(alarm.label, fullScreenIntent(alarmId))
-            acquireWakeLock()
             audio.start(alarm)
 
             // With the overlay permission held this succeeds and the alarm takes

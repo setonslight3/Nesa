@@ -173,4 +173,27 @@ class BackgroundReliability @Inject constructor(
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
             data = Uri.fromParts("package", context.packageName, null)
         }
+
+    /**
+     * Attempts to open the device manufacturer's Auto-start manager (Infinix, Xiaomi, Oppo, etc.)
+     * or falls back to App Info settings.
+     */
+    fun autoStartSettingsIntent(): Intent {
+        val oemIntents = listOf(
+            Intent().setComponent(android.content.ComponentName("com.transsion.phonemaster", "com.transsion.phonemaster.MainActivity")),
+            Intent().setComponent(android.content.ComponentName("com.transsion.phonemaster", "com.transsion.autostart.AutoStartManageActivity")),
+            Intent().setComponent(android.content.ComponentName("com.transsion.phonemanager", "com.transsion.phonemanager.view.AutoStartActivity")),
+            Intent().setComponent(android.content.ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+            Intent().setComponent(android.content.ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
+            Intent().setComponent(android.content.ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
+            Intent().setComponent(android.content.ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity"))
+        )
+        for (intent in oemIntents) {
+            if (context.packageManager.resolveActivity(intent, 0) != null) {
+                return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        }
+        return appDetailsSettings()
+    }
 }

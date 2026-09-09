@@ -145,6 +145,8 @@ class SettingsViewModel @Inject constructor(
 
     fun appDetailsSettings(): Intent = reliability.appDetailsSettings()
 
+    fun autoStartSettings(): Intent = reliability.autoStartSettingsIntent()
+
     fun onThemeModeChanged(mode: ThemeMode) = viewModelScope.launch {
         settings.setThemeMode(mode)
     }

@@ -482,8 +482,16 @@ private fun ReliabilitySection(
     // No API exposes the manufacturer auto-start switches, so the honest move is
     // to say what to look for rather than pretend NESA can check it.
     NoticeCard(text = stringResource(R.string.settings_reliability_manufacturer))
-    TextButton(onClick = { onOpen(viewModel.appDetailsSettings()) }) {
-        Text(stringResource(R.string.settings_reliability_open_app_settings))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(NesaSpacing.sm)
+    ) {
+        FilledTonalButton(onClick = { onOpen(viewModel.autoStartSettings()) }) {
+            Text(stringResource(R.string.settings_reliability_open_autostart))
+        }
+        TextButton(onClick = { onOpen(viewModel.appDetailsSettings()) }) {
+            Text(stringResource(R.string.settings_reliability_open_app_settings))
+        }
     }
 }
 
